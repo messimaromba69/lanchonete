@@ -45,7 +45,6 @@ export default function Doces() {
             className="flex items-center justify-between bg-blue-700 text-white rounded-lg p-2"
           >
             <div className="flex items-center gap-3">
-              <img src={p.img} alt={p.nome} className="w-10 h-10 rounded" />
               <span>{`${p.nome} (R$${p.preco.toFixed(2)})`}</span>
             </div>
 

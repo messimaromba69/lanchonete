@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ShoppingCart } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export default function SescCart() {
   const navigate = useNavigate();
@@ -50,7 +50,6 @@ export default function SescCart() {
         {items.map((p, i) => (
           <div key={i} className="flex items-center justify-between bg-blue-700 text-white rounded-lg p-2">
             <div className="flex items-center gap-3">
-              <img src={p.img} alt={p.nome} className="w-12 h-12 rounded" />
               <div>
                 <div className="font-medium">{p.nome}</div>
                 <div className="text-sm">R$ {Number(p.preco).toFixed(2)}</div>

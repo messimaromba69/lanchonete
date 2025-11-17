@@ -11,10 +11,6 @@ export default function Menu() {
         <button onClick={() => navigate(-1)}>
           <ArrowLeft className="w-6 h-6" />
         </button>
-
-        <button onClick={() => navigate("/carrinho")}>
-          <ShoppingCart className="w-6 h-6 text-orange-500 hover:text-orange-700 transition" />
-        </button>
       </div>
 
       <h1 className="text-xl font-semibold text-orange-500 mt-4">Cardápio - SENAC</h1>

@@ -50,7 +50,6 @@ export default function SenacCart() {
         {items.map((p, i) => (
           <div key={i} className="flex items-center justify-between bg-blue-700 text-white rounded-lg p-2">
             <div className="flex items-center gap-3">
-              <img src={p.img} alt={p.nome} className="w-12 h-12 rounded" />
               <div>
                 <div className="font-medium">{p.nome}</div>
                 <div className="text-sm">R$ {Number(p.preco).toFixed(2)}</div>
@@ -82,7 +81,7 @@ export default function SenacCart() {
               </button>
 
               <button
-                onClick={() => navigate("/pagamento")}
+                onClick={() => navigate("/payment")}
                 className="flex-1 bg-yellow-400 text-black py-2 rounded font-semibold"
               >
                 Finalizar compra
