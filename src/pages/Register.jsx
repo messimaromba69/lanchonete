@@ -1,14 +1,15 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
+import { supabase } from "../../supabase/supabase"; // ajuste caminho
 
 export default function Register() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
 
     if (!email || !password || !confirm) {
@@ -21,18 +22,31 @@ export default function Register() {
       return;
     }
 
-    const users = JSON.parse(localStorage.getItem("users")) || [];
+    setLoading(true);
 
-    if (users.some((user) => user.email === email)) {
-      alert("Este e-mail já está cadastrado!");
+    // 1️⃣ Criar usuário no Supabase Auth usando METADADOS
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          role: "usuario", // dado salvo no próprio Auth
+          criadoEm: new Date().toISOString(),
+        },
+      },
+    });
+
+    if (error) {
+      alert("Erro ao criar conta: " + error.message);
+      console.log(error);
+      setLoading(false);
       return;
     }
 
-    // Salva como usuário normal
-    users.push({ email, password, type: "usuario" });
-    localStorage.setItem("users", JSON.stringify(users));
-
+    setLoading(false);
     alert("Conta criada com sucesso!");
+
+    // 2️⃣ Redirecionar para login
     navigate("/loginuser");
   };
 
@@ -45,13 +59,14 @@ export default function Register() {
         <img src="./src/assets/senac.png" alt="Senac" className="w-40" />
       </div>
 
-
+      {/* Formulário */}
       <div className="flex flex-col items-center w-full max-w-lg bg-white p-10 rounded-2xl shadow-lg border border-gray-200">
         <h1 className="text-3xl font-semibold text-blue-800 mb-10">
           Criar Conta
         </h1>
 
         <form onSubmit={handleRegister} className="flex flex-col w-full space-y-6">
+
           <div>
             <label className="text-blue-800 text-lg font-semibold">Email</label>
             <input
@@ -86,10 +101,12 @@ export default function Register() {
 
           <button
             type="submit"
+            disabled={loading}
             className="bg-yellow-400 text-black font-semibold rounded-lg py-3 text-lg hover:bg-yellow-500"
           >
-            Criar
+            {loading ? "Criando..." : "Criar"}
           </button>
+
         </form>
       </div>
     </div>
