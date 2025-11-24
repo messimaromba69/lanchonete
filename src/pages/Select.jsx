@@ -28,7 +28,7 @@ export default function Select() {
         </button>
 
         <button
-          onClick={() => navigate("/senac")}
+          onClick={() => navigate("/menu/senac")}
           className="bg-blue-700 text-white py-5 rounded-2xl text-2xl font-medium w-full"
         >
           Senac

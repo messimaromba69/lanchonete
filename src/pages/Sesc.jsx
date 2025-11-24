@@ -1,39 +1,94 @@
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { FaShoppingCart, FaUserCircle } from "react-icons/fa";
 
-export default function Menu() {
+import fundoSenac from "./assets/sesc.png";
+
+export default function CardapioSenac() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const { itensSelecionados = [], quantidades = {} } = location.state || {};
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-white text-gray-800 p-9">
-      {/* Topo com voltar e carrinho */}
-      <div className="w-full flex justify-between items-center">
-        <button onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-6 h-12" />
-        </button>
+    <div className="flex flex-col min-h-screen bg-white text-gray-800 p-9 relative">
 
+      {/* ÍCONE DE PERFIL */}
+      <button
+        onClick={() => navigate("/profile")}
+        className="absolute top-6 right-20 p-2 rounded-lg z-40"
+        aria-label="Perfil"
+      >
+        <FaUserCircle size={40} className="text-blue-600" />
+      </button>
+
+      {/* ÍCONE DO CARRINHO */}
+      <button
+        onClick={() =>
+          navigate("/carrinho", {
+            state: { itensSelecionados, quantidades },
+          })
+        }
+        className="absolute top-6 right-6 p-2 rounded-lg z-50"
+        aria-label="Carrinho"
+      >
+        <FaShoppingCart size={36} className="text-blue-600" />
+      </button>
+
+      {/* LOGO */}
+      <div className="flex justify-center mt-4">
+        <img
+          src={fundoSenac}
+          alt="Senac"
+          className="w-40 h-32 object-contain"
+        />
       </div>
 
-      <h1 className="text-xl font-semibold text-blue-700 mt-4">Cardápio - SESC</h1>
+      {/* TÍTULO */}
+      <h1 className="text-3xl font-semibold text-blue-700 text-center mt-4">
+        Cardápio - <span className="text-4xl font-extrabold uppercase">SESC</span>
+      </h1>
 
-      <div className="mt-6 flex flex-col space-y-4 w-64">
+      {/* BOTÕES */}
+      <div className="mt-10 flex flex-col space-y-5 w-[420px] mx-auto">
+
         <button
-          onClick={() => navigate("/salgados")}
-          className="bg-blue-700 text-white py-5 rounded-lg font-semibold hover:bg-blue-800 transition"
+          onClick={() =>
+            navigate("/salgados", {
+              state: { itensSelecionados, quantidades },
+            })
+          }
+          className="bg-blue-700 text-white py-6 rounded-2xl text-2xl font-semibold hover:bg-blue-800 transition"
         >
           Salgados
         </button>
+
         <button
-          onClick={() => navigate("/doces")}
-          className="bg-blue-700 text-white py-5 rounded-lg font-semibold hover:bg-blue-800 transition"
+          onClick={() =>
+            navigate("/doces", {
+              state: { itensSelecionados, quantidades },
+            })
+          }
+          className="bg-blue-700 text-white py-6 rounded-2xl text-2xl font-semibold hover:bg-blue-800 transition"
         >
           Doces
         </button>
+
         <button
-          onClick={() => navigate("/bebidas")}
-          className="bg-blue-700 text-white py-5 rounded-lg font-semibold hover:bg-blue-800 transition"
+          onClick={() =>
+            navigate("/bebidas", {
+              state: { itensSelecionados, quantidades },
+            })
+          }
+          className="bg-blue-700 text-white py-6 rounded-2xl text-2xl font-semibold hover:bg-blue-800 transition"
         >
           Bebidas
+        </button>
+
+        <button
+          onClick={() => navigate("/select")}
+          className="bg-yellow-500 text-white py-4 rounded-2xl text-lg font-semibold hover:bg-yellow-400 transition"
+        >
+          Sair do Cardápio
         </button>
       </div>
     </div>

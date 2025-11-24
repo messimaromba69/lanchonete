@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { FaShoppingCart } from "react-icons/fa";
 
 export default function Doces() {
   const navigate = useNavigate();
@@ -33,7 +34,10 @@ export default function Doces() {
         <button onClick={() => navigate(-1)}>
           <ArrowLeft className="w-6 h-6" />
         </button>
-        <div className="w-6 h-6" />
+        <button onClick={() => navigate("/cart")}>
+      <FaShoppingCart size={30} className="text-blue-600" />
+</button>
+
       </div>
 
       <h1 className="text-xl font-semibold text-blue-700 mt-4">Opções de Doces</h1>
