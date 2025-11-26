@@ -14,7 +14,7 @@ import Carrinho from "./pages/Carrinho";
 import Pagamento from "./pages/Pagamento";
 import Profile from "./pages/Profile";
 import EditarPerfil from "./pages/EditarPerfil";
-
+import Selecione from "./pages/Selecione";
 
 
 
@@ -47,13 +47,13 @@ export default function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/editar-perfil" element={<EditarPerfil />} />
 
-
         <Route path="/senac" element={<Senac/>} />
         <Route path="/salgado" element={<Salgado/>} />
         <Route path="/doce" element={<Doce/>} />
         <Route path="/bebida" element={<Bebida />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/payment" element={<Payment />} />
+        <Route path="/selecione" element={<Selecione />} />
       </Routes>
     </BrowserRouter>
   );

@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
 
 export default function LoginAdmin() {
@@ -13,12 +12,12 @@ export default function LoginAdmin() {
     const admin = {
       email: "admin@gmail.com",
       password: "123456",
-      type: "admin",
     };
 
+    // 🔹 SOMENTE entra se email e senha forem corretos
     if (email === admin.email && password === admin.password) {
       alert("Bem-vindo, Administrador!");
-      navigate("/admin");
+      navigate("/selecione");  // 👉 VAI PARA A PÁGINA SELECIONE
     } else {
       alert("Somente administradores podem acessar aqui!");
     }
@@ -26,15 +25,6 @@ export default function LoginAdmin() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white text-gray-900">
-
-      {/* Logos */}
-      <div className="absolute top-8 w-full flex justify-between px-10">
-        <img src="./src/assets/sesc.png" alt="Sesc" className="w-40" />
-        <img src="./src/assets/senac.png" alt="Senac" className="w-40" />
-      </div>
-
-
-
       <h1 className="text-4xl font-bold text-blue-800 mb-10">
         Login Administrativo
       </h1>
@@ -63,6 +53,7 @@ export default function LoginAdmin() {
           />
         </div>
 
+        {/* 🔹 NÃO USE onClick AQUI! Isso quebrava o login */}
         <button
           type="submit"
           className="bg-yellow-400 text-black font-bold rounded-lg px-10 py-4 w-1/2 text-2xl"

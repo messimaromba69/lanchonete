@@ -22,15 +22,20 @@ export default function SalgadosSesc() {
         .select("*")
         .eq("tipo_produto", "salgado");
 
-      if (error) console.log("Erro ao buscar produtos:", error.message);
-      else {
+      if (error) {
+        console.log("Erro ao buscar produtos:", error.message);
+      } else {
         setProdutos(data);
-        // Inicializa quantidades com carrinho existente
+
+        // Puxa carrinho salvo
         const carrinho = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-        const iniciais = data.map(p => {
-          const item = carrinho.find(c => c.id === p.id_produto);
+
+        // Carrega quantidades já salvas
+        const iniciais = data.map((p) => {
+          const item = carrinho.find((c) => c.id_produto === p.id_produto);
           return item ? item.quantidade : 0;
         });
+
         setQuantidades(iniciais);
       }
       setLoading(false);
@@ -49,17 +54,19 @@ export default function SalgadosSesc() {
 
     const novosItens = produtos
       .map((p, i) => ({
-        id: p.id_produto,
-        nome: p.nome_produto,
+        id_produto: p.id_produto,
+        nome_produto: p.nome_produto,
         preco: p.preco,
         imagem: p.imagem,
         quantidade: quantidades[i],
       }))
-      .filter(p => p.quantidade > 0);
+      .filter((p) => p.quantidade > 0);
 
     // Evita duplicação de itens
-    const nomesNovos = novosItens.map(i => i.id);
-    const filtrado = carrinhoAtual.filter(i => !nomesNovos.includes(i.id));
+    const idsNovos = novosItens.map((i) => i.id_produto);
+    const filtrado = carrinhoAtual.filter(
+      (i) => !idsNovos.includes(i.id_produto)
+    );
 
     const resultado = [...filtrado, ...novosItens];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(resultado));
