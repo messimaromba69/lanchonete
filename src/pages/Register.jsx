@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { supabase } from "../../supabase/supabase"; // ajuste caminho
 
 export default function Register() {
@@ -54,8 +55,16 @@ export default function Register() {
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-white text-gray-900">
 
       {/* Logos */}
-      <div className="absolute top-8 w-full flex justify-between px-10">
-        <img src="./src/assets/sesc.png" alt="Sesc" className="w-40" />
+      <div className="absolute top-8 left-0 right-0 px-10 flex items-start justify-between">
+        {/* Coluna esquerda: logo Sesc com seta abaixo */}
+        <div className="flex flex-col items-center">
+          <img src="./src/assets/sesc.png" alt="Sesc" className="w-40" />
+          <button onClick={() => navigate("/cadastro")} className="text-black mt-3">
+            <ArrowLeft size={40} />
+          </button>
+        </div>
+
+        {/* Logo Senac à direita */}
         <img src="./src/assets/senac.png" alt="Senac" className="w-40" />
       </div>
 

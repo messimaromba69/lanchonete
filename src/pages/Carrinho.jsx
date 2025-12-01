@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { FaUserCircle } from "react-icons/fa";   // <- FALTAVA ISSO
 import fundoSesc from "./assets/sesc.png";
 import { supabase } from "../../supabase/supabase";
 
@@ -96,28 +97,110 @@ export default function CarrinhoSesc() {
         0
       );
 
-      const { data: pedido, error } = await supabase
-        .from("pedido")
-        .insert({
-          id_user_cliente: userId,
-          id_lanchonete: itens[0].id_lanchonete,
-          valor_total: totalPedido,
-          status_pedido: "pendente",
-          metodo_pagamento: "none",
-          itens: itensPedido,
-        })
-        .select()
-        .single();
+      // Determina id_lanchonete a partir dos itens do carrinho (verifica várias chaves possíveis)
+      const possibleKeys = ["id_lanchonete", "lanchonete_id", "id_lanch", "id_lanchonete_id"];
+      const rawLanch = itens.find((it) => {
+        if (!it) return false;
+        return possibleKeys.some((k) => it[k] !== undefined && it[k] !== null);
+      }) || itens[0];
 
-      if (error) {
-        console.log(error);
-        alert("Erro ao criar pedido.");
+      let idLanchonete = null;
+      if (rawLanch) {
+        for (const k of possibleKeys) {
+          if (rawLanch[k] !== undefined && rawLanch[k] !== null) {
+            const num = Number(rawLanch[k]);
+            if (Number.isFinite(num)) {
+              idLanchonete = num;
+            }
+            break;
+          }
+        }
+      }
+
+      // Fallback: se não encontramos id_lanchonete nos itens, tentar localStorage (seleção anterior)
+      if (idLanchonete === null) {
+        try {
+          const saved = localStorage.getItem("selectedLanchoneteId");
+          const parsed = saved ? Number(saved) : null;
+          if (Number.isFinite(parsed)) idLanchonete = parsed;
+        } catch (e) {
+          console.warn("Erro ao ler selectedLanchoneteId do localStorage:", e);
+        }
+      }
+
+      // Prepara o payload e loga para diagnóstico
+      const payload = {
+        id_user_cliente: userId,
+        id_lanchonete: idLanchonete,
+        valor_total: totalPedido,
+        status_pedido: "pendente",
+        metodo_pagamento: "",
+        itens: itensPedido,
+      };
+
+      console.log("Payload do insert pedido:", payload);
+
+      // Se não conseguimos determinar id_lanchonete, aborta e pede correção (evita pedidos sem vinculo)
+      if (idLanchonete === null) {
+        console.warn("id_lanchonete está nulo — abortando insert para evitar pedido sem lanchonete.");
+        alert(
+          "Não foi possível identificar a lanchonete do pedido. Verifique os itens do carrinho e tente novamente."
+        );
+        return;
+      }
+
+      // insert sem exigir formato complexo; usa maybeSingle e trata retorno de forma robusta
+      const { data: pedidoData, error: insertError } = await supabase
+        .from("pedido")
+        .insert(payload)
+        .select()
+        .maybeSingle(); // evita problemas quando o servidor não retorna exatamente 1 objeto
+
+      console.log("Resposta insert pedido (raw):", JSON.stringify({ pedidoData, insertError }));
+
+      if (insertError) {
+        console.error("Erro ao inserir pedido:", insertError);
+        alert("Erro ao criar pedido: " + (insertError.message || JSON.stringify(insertError)));
+        return;
+      }
+
+      // Verificação adicional: buscar a linha criada para confirmar id_lanchonete salvo
+      try {
+        const byId =
+          pedidoData?.id_pedido ?? (Array.isArray(pedidoData) ? pedidoData[0]?.id_pedido : undefined);
+        if (byId) {
+          const { data: fetched, error: fetchErr } = await supabase
+            .from("pedido")
+            .select("id_pedido, id_lanchonete")
+            .eq("id_pedido", byId)
+            .maybeSingle();
+          if (fetchErr) {
+            console.warn("Não foi possível buscar pedido criado para verificação:", fetchErr);
+          } else {
+            console.log("Verificação pós-insert (id_lanchonete):", fetched);
+            if (fetched && (fetched.id_lanchonete === null || fetched.id_lanchonete === undefined)) {
+              console.warn("id_lanchonete não foi gravado no banco para o pedido", byId);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Erro na verificação pós-insert:", e);
+      }
+
+      // extrai id de forma robusta
+      const createdId =
+        pedidoData?.id_pedido ??
+        (Array.isArray(pedidoData) ? pedidoData[0]?.id_pedido : undefined);
+
+      if (!createdId) {
+        console.error("id_pedido não retornado após insert", { pedidoData });
+        alert("Erro ao criar pedido: id do pedido não foi retornado pelo servidor.");
         return;
       }
 
       localStorage.removeItem(STORAGE_KEY);
 
-      navigate("/pagamento", { state: { id_pedido: pedido.id_pedido } });
+      navigate("/pagamento", { state: { id_pedido: createdId } });
     } catch (e) {
       console.log(e);
       alert("Erro inesperado.");
@@ -125,28 +208,44 @@ export default function CarrinhoSesc() {
   };
 
   return (
-    <div className="min-h-screen bg-white p-4 flex flex-col items-center">
-      {/* Header */}
-      <div className="flex items-center justify-between w-full max-w-2xl mb-4">
-        <button onClick={() => navigate(-1)} className="text-black">
-          <ArrowLeft size={28} />
-        </button>
+    // container centralizado e relativo
+    <div className="relative flex flex-col items-center justify-center min-h-screen bg-white p-4">
+      {/* Header absoluto no topo — logo à esquerda e perfil à direita */}
+      <div className="absolute top-4 left-0 right-0 flex items-center justify-between px-4">
+        {/* Logo à esquerda com botão voltar abaixo */}
+        <div className="flex flex-col items-center">
+          <img
+            src={fundoSesc}
+            alt="Logo Sesc"
+            className="h-28 md:h-32 object-contain"
+          />
 
-        <img src={fundoSesc} alt="Logo Sesc" className="h-20 object-contain" />
+          <button
+            onClick={() => navigate(-1)}
+            className="text-black mt-3"
+            aria-label="Voltar"
+          >
+            <ArrowLeft size={40} />
+          </button>
+        </div>
 
+        {/* ÍCONE DE PERFIL à direita (aumentado) */}
         <button
           onClick={() => navigate("/profile")}
-          className="flex items-center gap-2"
+          className="p-1 rounded-lg z-40"
+          aria-label="Perfil"
         >
-          <div className="w-8 h-8 rounded-full bg-sky-100 flex items-center justify-center text-sky-600">
-            👤
-          </div>
+          <FaUserCircle size={64} className="text-blue-600" />
         </button>
       </div>
 
-      <h2 className="text-blue-700 text-2xl font-semibold mb-4">Carrinho</h2>
+      {/* Título mais para cima */}
+      <h2 className="text-3xl md:text-4xl font-bold text-blue-700 mt-2 mb-3">
+        Carrinho
+      </h2>
 
-      <div className="w-full max-w-2xl space-y-3">
+      {/* Caixas aproximadas do título */}
+      <div className="w-full max-w-2xl space-y-3 mt-1">
         {itens.length === 0 && (
           <p className="text-center text-gray-600">Seu carrinho está vazio</p>
         )}
@@ -170,9 +269,7 @@ export default function CarrinhoSesc() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() =>
-                  alterarQuantidade(item.id_produto, -1)
-                }
+                onClick={() => alterarQuantidade(item.id_produto, -1)}
                 className="px-2 bg-blue-600 rounded"
               >
                 -
@@ -181,9 +278,7 @@ export default function CarrinhoSesc() {
               <div className="px-2">{qtd[item.id_produto] || 0}</div>
 
               <button
-                onClick={() =>
-                  alterarQuantidade(item.id_produto, 1)
-                }
+                onClick={() => alterarQuantidade(item.id_produto, 1)}
                 className="px-2 bg-blue-600 rounded"
               >
                 +

@@ -1,9 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaShoppingCart, FaUserCircle } from "react-icons/fa";
 
-import fundoSenac from "./assets/sesc.png";
+import fundoSesc from "./assets/sesc.png";
 
-export default function CardapioSenac() {
+export default function CardapioSesc() {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -37,8 +37,8 @@ export default function CardapioSenac() {
       {/* LOGO */}
       <div className="flex justify-center mt-4">
         <img
-          src={fundoSenac}
-          alt="Senac"
+          src={fundoSesc}
+          alt="Sesc"
           className="w-40 h-32 object-contain"
         />
       </div>

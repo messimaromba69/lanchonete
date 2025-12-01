@@ -1,38 +1,208 @@
 import { useNavigate } from "react-router-dom";
+import { supabase } from "../../supabase/supabase";
+
+import { ArrowLeft } from "lucide-react";
 
 export default function Select() {
   const navigate = useNavigate();
 
+  const selecionarLanchonete = async (nomeEscola) => {
+    try {
+      // 0️⃣ Verifica se há usuário autenticado (tabelas com RLS exigem login)
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      if (!userId) {
+        alert(
+          "A operação exige que você esteja logado. Faça login para continuar."
+        );
+        navigate("/loginUser"); // ajuste para sua rota de login se necessário
+        return;
+      }
+
+      // opcional: tentar buscar se já existe antes de inserir
+      // limitar a 1 linha para evitar PGRST116 (múltiplas linhas quando maybeSingle() espera 0/1)
+      const { data: existingRaw, error: selectError } = await supabase
+        .from("escola")
+        .select("id_escola")
+        .eq("nome_escola", nomeEscola)
+        .limit(1)
+        .maybeSingle();
+
+      // normaliza resultado (algumas versões/combinações podem retornar array por segurança)
+      const existing = Array.isArray(existingRaw) ? existingRaw[0] : existingRaw;
+
+      if (selectError) {
+        // mostra mensagem legível e loga o objeto completo
+        const msg =
+          selectError?.message || selectError?.details || JSON.stringify(selectError);
+        console.error("Erro ao buscar escola existente:", selectError);
+        if (selectError?.status === 401) {
+          alert(
+            "Erro 401 ao acessar Supabase. Verifique SUPABASE_URL e SUPABASE_ANON_KEY, além das políticas RLS no painel do Supabase."
+          );
+          return;
+        }
+        alert("Erro ao buscar escola: " + msg);
+        return;
+      }
+
+      if (existing?.id_escola) {
+        // já existe: usar esse id e seguir para inserção da lanchonete (ou somente navegar)
+        const idEscola = existing.id_escola;
+        const { data: lanchoInsert, error: lanchoError } = await supabase
+          .from("lanchonete")
+          .insert([
+            {
+              id_escola: idEscola,
+              nome_lanchonete: nomeEscola,
+              id_senac: nomeEscola === "Senac" ? "1" : null,
+              id_sesc: nomeEscola === "Sesc" ? "1" : null,
+            },
+          ])
+          .select()
+          .single();
+
+        if (lanchoError) {
+          console.error("Erro ao salvar lanchonete:", lanchoError);
+          if (lanchoError?.status === 401 || lanchoError?.code === "42501") {
+            alert(
+              "Operação bloqueada por políticas de segurança (RLS). Certifique-se de que o usuário tem permissão para inserir."
+            );
+            return;
+          }
+          alert("Erro ao salvar lanchonete: " + JSON.stringify(lanchoError));
+          return;
+        }
+
+        if (nomeEscola === "Sesc") navigate("/sesc");
+        if (nomeEscola === "Senac") navigate("/menu/senac");
+        // salva a lanchonete selecionada no localStorage para uso posterior (fallback no carrinho)
+        try {
+          if (lanchoInsert && lanchoInsert.id_lanchonete) {
+            localStorage.setItem("selectedLanchoneteId", String(lanchoInsert.id_lanchonete));
+          }
+        } catch (e) {
+          console.warn("Não foi possível salvar selectedLanchoneteId no localStorage:", e);
+        }
+        return;
+      }
+
+      // 1️⃣ INSERIR ESCOLA (caso não exista)
+      const { data: escolaInsert, error: escolaError } = await supabase
+        .from("escola")
+        .insert([{ nome_escola: nomeEscola }])
+        .select()
+        .single();
+
+      if (escolaError) {
+        console.error("Erro ao salvar escola:", escolaError);
+        if (escolaError?.status === 401 || escolaError?.code === "42501") {
+          alert(
+            "Operação bloqueada por políticas de segurança (RLS) ou credenciais inválidas. Faça login com um usuário autorizado ou ajuste as políticas no painel Supabase."
+          );
+          return;
+        }
+        alert("Erro ao salvar escola: " + JSON.stringify(escolaError));
+        return;
+      }
+
+      console.log("Escola salva:", escolaInsert);
+
+      // PEGAR O ID CERTO
+      const idEscola = escolaInsert.id_escola;
+
+      // 2️⃣ INSERIR LANCHONETE VINCULADA
+      const { data: lanchoInsert, error: lanchoError } = await supabase
+        .from("lanchonete")
+        .insert([
+          {
+            id_escola: idEscola,
+            nome_lanchonete: nomeEscola,
+            id_senac: nomeEscola === "Senac" ? "1" : null,
+            id_sesc: nomeEscola === "Sesc" ? "1" : null,
+          },
+        ])
+        .select()
+        .single();
+
+      if (lanchoError) {
+        console.error("Erro ao salvar lanchonete:", lanchoError);
+        if (lanchoError?.status === 401 || lanchoError?.code === "42501") {
+          alert(
+            "Operação bloqueada por políticas de segurança (RLS) ou credenciais inválidas. Faça login com um usuário autorizado ou ajuste as políticas no painel Supabase."
+          );
+          return;
+        }
+        alert("Erro ao salvar lanchonete: " + JSON.stringify(lanchoError));
+        return;
+      }
+
+      // salva id da lanchonete selecionada para uso posterior (fallback no carrinho)
+      try {
+        if (lanchoInsert && lanchoInsert.id_lanchonete) {
+          localStorage.setItem("selectedLanchoneteId", String(lanchoInsert.id_lanchonete));
+        }
+      } catch (e) {
+        console.warn("Não foi possível salvar selectedLanchoneteId no localStorage:", e);
+      }
+
+      console.log("Lanchonete salva:", lanchoInsert);
+
+      // 3️⃣ REDIRECIONAR
+      if (nomeEscola === "Sesc") navigate("/sesc");
+      if (nomeEscola === "Senac") navigate("/menu/senac");
+    } catch (err) {
+      const msg = err?.message || JSON.stringify(err);
+      console.error("Erro inesperado:", err);
+      alert("Erro inesperado: " + msg);
+    }
+  };
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    // ...logica de submissao via JS/Fetch/Supabase...
+  }
+
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen bg-white text-gray-900">
+      {/* LOGOS */}
+      <div className="absolute top-8 left-0 right-0 px-10 flex items-start justify-between">
+        {/* Coluna esquerda: logo Sesc com seta abaixo */}
+        <div className="flex flex-col items-center">
+          <img src="./src/assets/sesc.png" alt="Sesc" className="w-40" />
+          <button onClick={() => navigate("/loginUser")} className="text-black mt-3">
+            <ArrowLeft size={40} />
+          </button>
+        </div>
 
-      {/* 🔹 Logos no topo */}
-      <div className="absolute top-8 w-full flex justify-between px-8">
-        <img src="/src/assets/sesc.png" className="w-28" alt="Sesc" />
-        <img src="/src/assets/senac.png" className="w-28" alt="Senac" />
+        {/* Logo Senac à direita */}
+        <img src="./src/assets/senac.png" alt="Senac" className="w-40" />
       </div>
 
-
-      {/* 🔹 Título */}
       <h1 className="text-4xl font-semibold text-blue-700 mt-20 mb-8">
         Selecione a lanchonete
       </h1>
 
-      {/* 🔹 Botões */}
       <div className="flex flex-col w-[420px] space-y-8">
-        <button
-          onClick={() => navigate("/sesc")}
-          className="bg-blue-700 text-white py-5 rounded-2xl text-2xl font-medium w-full"
-        >
-          Sesc
-        </button>
+        <form onSubmit={handleSubmit}>
+          <button
+            type="button"
+            onClick={() => selecionarLanchonete("Sesc")}
+            className="bg-blue-700 text-white py-5 rounded-2xl text-2xl font-medium w-full"
+          >
+            Sesc
+          </button>
+        </form>
 
-        <button
-          onClick={() => navigate("/menu/senac")}
-          className="bg-blue-700 text-white py-5 rounded-2xl text-2xl font-medium w-full"
-        >
-          Senac
-        </button>
+        <form onSubmit={handleSubmit}>
+          <button
+            type="button"
+            onClick={() => selecionarLanchonete("Senac")}
+            className="bg-orange-500 text-white py-5 rounded-2xl text-2xl font-medium w-full"
+          >
+            Senac
+          </button>
+        </form>
       </div>
     </div>
   );

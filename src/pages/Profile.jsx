@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react"; // ✔ IMPORTAÇÃO FALTANDO
 import { supabase } from "../../supabase/supabase";
+import { toast } from "../hooks/use-toast";
 
 import fundoSesc from "./assets/sesc.png";
 import fundoSenac from "./assets/senac.png";
@@ -18,8 +19,12 @@ export default function Profile() {
     const user = auth?.user;
 
     if (!user) {
-      alert("Nenhum usuário logado");
-      navigate("/login");
+      toast({
+        title: "Nenhum usuário logado",
+        description: "Faça login para continuar.",
+        variant: "destructive",
+      });
+      navigate("/loginUser");
       return;
     }
 
@@ -31,7 +36,11 @@ export default function Profile() {
 
     if (error) {
       console.log(error);
-      alert("Erro ao carregar informações do perfil");
+      toast({
+        title: "Erro ao carregar perfil",
+        description: error.message || "Tente novamente mais tarde.",
+        variant: "destructive",
+      });
       setPerfil(null);
     } else if (!data) {
       setPerfil(null);
@@ -75,69 +84,92 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-white p-4">
-      {/* Logos */}
-      <div className="flex justify-between px-4 mt-4">
-        <img src={fundoSesc} className="w-28" />
-        <img src={fundoSenac} className="w-28" />
+      {/* Header compacto: botão voltar + logo Sesc à esquerda, logo Senac à direita */}
+      <div className="absolute top-8 left-0 right-0 px-10 flex items-start justify-between">
+        {/* Coluna esquerda: logo Sesc com seta abaixo */}
+        <div className="flex flex-col items-center">
+          <img src="./src/assets/sesc.png" alt="Sesc" className="w-40" />
+          <button onClick={() => navigate(-1)} className="text-black mt-3">
+            <ArrowLeft size={40} />
+          </button>
+        </div>
+
+        {/* Logo Senac à direita */}
+        <img src="./src/assets/senac.png" alt="Senac" className="w-40" />
       </div>
 
-      {/* Voltar */}
-      <button onClick={() => navigate(-1)} className="text-black mt-2">
-        <ArrowLeft size={28} />
-      </button>
-
-      <h1 className="text-center text-4xl font-light text-blue-700 my-6">
-        Perfil
+      <h1 className="text-center text-3xl md:text-4xl font-semibold text-blue-700 mt-10 mb-10">
+        Meu Perfil
       </h1>
 
-      {/* Avatar */}
-      <div className="flex justify-center">
-        <img
-          src={
-            perfil.foto ||
-            "https://cdn-icons-png.flaticon.com/512/847/847969.png"
-          }
-          className="w-44 h-44 rounded-full border-4 border-blue-400 object-cover"
-        />
-      </div>
-
-      {/* Infos */}
-      <div className="max-w-md mx-auto mt-6 space-y-3">
-        {[
-          ["Nome", "nome"],
-          ["Telefone", "telefone"],
-          ["Sexo", "sexo"],
-          ["Nascimento", "data_nascimento"],
-          ["CEP", "cep"],
-          ["Cidade", "cidade"],
-          ["Estado", "estado"],
-          ["Rua", "rua"],
-          ["Bairro", "bairro"],
-          ["Complemento", "complemento"],
-        ].map(([label, key]) => (
-          <div className="bg-blue-700 text-white rounded p-3" key={key}>
-            {label}: {perfil[key] || "—"}
+      {/* Avatar + Card */}
+      <div className="max-w-lg mx-auto mb-20">
+        {/* Avatar */}
+        <div className="flex justify-center -mt-8">
+          <div className="bg-white rounded-full p-2 shadow-xl">
+            <img
+              src={
+                perfil.foto ||
+                "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+              }
+              alt="Avatar"
+              className="w-40 h-40 rounded-full object-cover"
+            />
           </div>
-        ))}
+        </div>
 
-        {/* Sair */}
-        <button
-          onClick={async () => {
-            await supabase.auth.signOut();
-            navigate("/login");
-          }}
-          className="w-full bg-yellow-400 text-black py-3 rounded mt-6 font-semibold"
-        >
-          Sair do perfil
-        </button>
+        {/* Card */}
+        <div className="bg-white shadow-lg rounded-2xl pt-16 px-8 pb-10 mt-6">
+          <h2 className="text-center text-2xl font-semibold text-gray-800">
+            {perfil.nome || "—"}
+          </h2>
 
-        {/* Editar */}
-        <button
-          onClick={() => navigate("/editar-perfil")}
-          className="w-full bg-blue-700 text-white py-3 rounded mt-4 font-semibold"
-        >
-          Editar Perfil
-        </button>
+          <p className="text-center text-sm text-gray-500 mt-2">
+            {perfil.email || ""}
+          </p>
+
+          {/* Informações */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
+            {[
+              ["Telefone", "telefone"],
+              ["Sexo", "sexo"],
+              ["Nascimento", "data_nascimento"],
+              ["CEP", "cep"],
+              ["Cidade", "cidade"],
+              ["Estado", "estado"],
+              ["Rua", "rua"],
+              ["Bairro", "bairro"],
+              ["Complemento", "complemento"],
+            ].map(([label, key]) => (
+              <div key={key} className="p-4 bg-blue-50 rounded-lg">
+                <div className="text-xs text-gray-500">{label}</div>
+                <div className="text-sm text-gray-800 font-medium">
+                  {perfil[key] || "—"}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Botões */}
+          <div className="flex flex-col sm:flex-row gap-4 mt-10">
+            <button
+              onClick={() => navigate("/editar-perfil")}
+              className="flex-1 bg-blue-600 text-white py-3.5 rounded-lg font-semibold hover:bg-blue-700 transition"
+            >
+              Editar Perfil
+            </button>
+
+            <button
+              onClick={async () => {
+                await supabase.auth.signOut();
+                navigate("/loginUser");
+              }}
+              className="flex-1 bg-yellow-400 text-black py-3.5 rounded-lg font-semibold hover:brightness-95 transition"
+            >
+              Sair
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

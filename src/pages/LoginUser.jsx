@@ -1,62 +1,87 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 import { supabase } from "../../supabase/supabase";
+import { toast } from "../hooks/use-toast";
+import SescLogo from "../assets/sesc.png";
+import SenacLogo from "../assets/senac.png";
 
 export default function LoginUser() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
     if (!email || !password) {
-      alert("Preencha email e senha!");
+      toast({ title: "Preencha email e senha!", variant: "destructive" });
       return;
     }
 
-    // 🔥 Login via Supabase AUTH
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    setLoading(true);
+    try {
+      // 🔥 Login via Supabase AUTH
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    if (error) {
-      alert("Email ou senha incorretos!");
-      return;
-    }
+      if (error) {
+        console.error("Supabase auth error:", error);
+        // mostrar mensagem mais específica quando disponível
+        const msg = error.message || "Email ou senha incorretos!";
+        toast({ title: msg, variant: "destructive" });
+        return;
+      }
 
-    const user = data.user;
+      const user = data?.user;
 
-    if (!user) {
-      alert("Erro inesperado ao buscar usuário!");
-      return;
-    }
+      if (!user) {
+        console.error("Supabase returned no user, data:", data);
+        toast({ title: "Erro inesperado ao buscar usuário!", variant: "destructive" });
+        return;
+      }
 
     // 🔎 PEGAR ROLE DOS METADADOS
     const role = user.user_metadata?.role;
 
     if (!role) {
-      alert("Usuário sem permissão definida! Contate o suporte.");
+      toast({ title: "Usuário sem permissão definida! Contate o suporte.", variant: "destructive" });
       return;
     }
 
     // 🚫 Impedir admin de logar aqui
     if (role === "admin") {
-      alert("Admins devem usar o login administrativo!");
+      toast({ title: "Admins devem usar o login administrativo!", variant: "destructive" });
       return;
     }
 
-    alert("Login realizado com sucesso!");
-    navigate("/usuario");
+    toast({ title: "Login realizado com sucesso!" });
+    navigate("/select");
+    } catch (err) {
+      console.error("Erro no login:", err);
+      toast({ title: "Erro no login. Tente novamente.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white text-gray-900">
       {/* Logos */}
-      <div className="absolute top-8 w-full flex justify-between px-10">
-        <img src="./src/assets/sesc.png" alt="Sesc" className="w-40" />
-        <img src="./src/assets/senac.png" alt="Senac" className="w-40" />
+      <div className="absolute top-8 left-0 right-0 px-10 flex items-start justify-between">
+        {/* Coluna esquerda: logo Sesc com seta abaixo */}
+        <div className="flex flex-col items-center">
+          <img src={SescLogo} alt="Sesc" className="w-40" />
+          <button onClick={() => navigate("/cadastro")} className="text-black mt-3">
+            <ArrowLeft size={40} />
+          </button>
+        </div>
+
+        {/* Logo Senac à direita */}
+        <img src={SenacLogo} alt="Senac" className="w-40" />
       </div>
 
       <h1 className="text-4xl font-bold text-blue-800 mb-10">
@@ -88,11 +113,11 @@ export default function LoginUser() {
         </div>
 
         <button
-        onClick={() => navigate("/select")}
           type="submit"
-          className="bg-yellow-400 text-black font-bold rounded-lg px-10 py-4 w-1/2 text-2xl"
+          disabled={loading}
+          className="bg-yellow-400 text-black font-bold rounded-lg px-10 py-4 w-1/2 text-2xl disabled:opacity-50"
         >
-          Entrar
+          {loading ? "Entrando..." : "Entrar"}
         </button>
       </form>
     </div>

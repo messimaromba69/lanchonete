@@ -1,7 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
+import { toast } from "../hooks/use-toast";
+import SescLogo from "../assets/sesc.png";
+import SenacLogo from "../assets/senac.png";
 
-export default function LoginAdmin() {
+export default function LoginAdm() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,15 +20,33 @@ export default function LoginAdmin() {
 
     // 🔹 SOMENTE entra se email e senha forem corretos
     if (email === admin.email && password === admin.password) {
-      alert("Bem-vindo, Administrador!");
-      navigate("/selecione");  // 👉 VAI PARA A PÁGINA SELECIONE
+      toast({ title: "Bem-vindo, Administrador!" });
+      navigate("/userAdm"); // 👉 VAI PARA A PÁGINA SELECIONE
     } else {
-      alert("Somente administradores podem acessar aqui!");
+      toast({
+        title: "Somente administradores podem acessar aqui!",
+        variant: "destructive",
+      });
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white text-gray-900">
+      <div className="absolute top-8 left-0 right-0 px-10 flex items-start justify-between">
+        {/* Coluna esquerda: logo Sesc com seta abaixo */}
+        <div className="flex flex-col items-center">
+          <img src={SescLogo} alt="Sesc" className="w-40" />
+          <button
+            onClick={() => navigate("/")}
+            className="text-black mt-3"
+          >
+            <ArrowLeft size={40} />
+          </button>
+        </div>
+
+        {/* Logo Senac à direita */}
+        <img src={SenacLogo} alt="Senac" className="w-40" />
+      </div>
       <h1 className="text-4xl font-bold text-blue-800 mb-10">
         Login Administrativo
       </h1>

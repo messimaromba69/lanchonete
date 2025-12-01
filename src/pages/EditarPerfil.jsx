@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react"; // ← FALTAVA ISSO!
 import { supabase } from "../../supabase/supabase";
+import { toast } from "../hooks/use-toast";
 
 import fundoSesc from "./assets/sesc.png";
 import fundoSenac from "./assets/senac.png";
@@ -88,7 +89,7 @@ export default function EditarPerfil() {
     if (!user) return;
 
     if (!form.nome || !form.telefone) {
-      alert("Nome e telefone são obrigatórios!");
+      toast({ title: "Nome e telefone são obrigatórios!", variant: "destructive" });
       return;
     }
 
@@ -102,25 +103,28 @@ export default function EditarPerfil() {
 
     if (error) {
       console.log(error);
-      alert("Erro ao salvar alterações");
+      toast({ title: "Erro ao salvar alterações", variant: "destructive" });
     } else {
-      alert("Perfil atualizado com sucesso!");
+      toast({ title: "Perfil atualizado com sucesso!" });
       navigate(-1);
     }
   }
 
   return (
-    <div className="min-h-screen bg-white p-4">
+    <div className="min-h-screen bg-white p-4 pt-32">
       {/* Logos */}
-      <div className="flex justify-between px-6 mt-4">
-        <img src={fundoSesc} className="w-28" />
-        <img src={fundoSenac} className="w-28" />
-      </div>
+      <div className="absolute top-8 left-0 right-0 px-10 flex items-start justify-between">
+        {/* Coluna esquerda: logo Sesc com seta abaixo */}
+        <div className="flex flex-col items-center">
+          <img src="./src/assets/sesc.png" alt="Sesc" className="w-40" />
+          <button onClick={() => navigate(-1)} className="text-black mt-3">
+            <ArrowLeft size={40} />
+          </button>
+        </div>
 
-      {/* Botão voltar */}
-      <button onClick={() => navigate(-1)} className="text-black mt-2">
-        <ArrowLeft size={28} />
-      </button>
+        {/* Logo Senac à direita */}
+        <img src="./src/assets/senac.png" alt="Senac" className="w-40" />
+      </div>
 
       <h1 className="text-3xl text-center mt-4 mb-6 text-blue-700 font-semibold">
         Editar Perfil
@@ -143,20 +147,34 @@ export default function EditarPerfil() {
             mask: maskDate,
           },
         ].map((item) => (
-          <input
-            key={item.key}
-            className="w-full bg-gray-200 p-3 rounded mb-3"
-            placeholder={item.placeholder}
-            value={form[item.key]}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                [item.key]: item.mask
-                  ? item.mask(e.target.value)
-                  : e.target.value,
-              })
-            }
-          />
+          item.key === "sexo" ? (
+            <select
+              key={item.key}
+              className="w-full bg-gray-200 p-3 rounded mb-3"
+              value={form.sexo || ""}
+              onChange={(e) => setForm({ ...form, sexo: e.target.value })}
+            >
+              <option value="">Selecione</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+              <option value="Prefiro não informar">Prefiro não informar</option>
+            </select>
+          ) : (
+            <input
+              key={item.key}
+              className="w-full bg-gray-200 p-3 rounded mb-3"
+              placeholder={item.placeholder}
+              value={form[item.key]}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  [item.key]: item.mask
+                    ? item.mask(e.target.value)
+                    : e.target.value,
+                })
+              }
+            />
+          )
         ))}
 
         <button

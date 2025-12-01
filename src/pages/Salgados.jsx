@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { FaShoppingCart } from "react-icons/fa";
 import { supabase } from "../../supabase/supabase";
 import fundoSesc from "./assets/sesc.png";
+import { toast } from "../hooks/use-toast";
 
 export default function SalgadosSesc() {
   const navigate = useNavigate();
@@ -68,36 +69,54 @@ export default function SalgadosSesc() {
       (i) => !idsNovos.includes(i.id_produto)
     );
 
+    if (novosItens.length === 0) {
+      toast({ title: "não tem nada em seu carrinho", variant: "destructive" });
+      return;
+    }
+
     const resultado = [...filtrado, ...novosItens];
     localStorage.setItem(STORAGE_KEY, JSON.stringify(resultado));
 
-    alert("Itens adicionados ao carrinho!");
+    toast({ title: "Itens adicionados ao carrinho" });
     navigate("/carrinho");
   };
 
   return (
-    <div className="flex flex-col items-center min-h-screen bg-white text-gray-800 p-4">
+    <div className="flex flex-col items-center min-h-screen bg-white text-gray-800 p-4 pt-2">
       {/* Header */}
-      <div className="w-full flex justify-between items-center mb-4 max-w-2xl">
-        <button onClick={() => navigate(-1)}>
-          <ArrowLeft className="w-6 h-6" />
-        </button>
+      {/* Tornei o header full-width e removi o max-w para que logo fique à esquerda e carrinho à direita */}
+      <div className="w-full flex items-center justify-between mb-2 px-4">
+        <div className="flex flex-col items-center">
+          <img
+            src={fundoSesc}
+            alt="Logo Sesc"
+            className="w-40 h-32 object-contain"
+          />
 
-        <img src={fundoSesc} alt="Logo Sesc" className="h-20 object-contain" />
+          <button
+            onClick={() => navigate("/sesc")}
+            className="text-black mt-3"
+            aria-label="Voltar"
+          >
+            <ArrowLeft size={40} />
+          </button>
+        </div>
 
-        <button onClick={() => navigate("/carrinho")}>
-          <FaShoppingCart size={30} className="text-blue-600" />
-        </button>
+        <div className="flex items-center justify-end">
+          <button onClick={() => navigate("/carrinho")} className="p-1">
+            <FaShoppingCart size={44} className="text-blue-600" />
+          </button>
+        </div>
       </div>
 
-      <h1 className="text-xl font-semibold text-blue-700 mt-4">
+      <h1 className="text-3xl md:text-4xl font-bold text-blue-700 mt-2 text-center mb-6">
         Opções de Salgados
       </h1>
 
       {loading ? (
         <div className="mt-10 text-center text-blue-700">Carregando...</div>
       ) : (
-        <div className="w-full max-w-md mt-6 space-y-3">
+        <div className="w-full max-w-md mt-0 space-y-3 mx-auto">
           {produtos.map((p, i) => (
             <div
               key={p.id_produto}
@@ -118,14 +137,14 @@ export default function SalgadosSesc() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => alterarQuantidade(i, -1)}
-                  className="px-2 bg-blue-600 rounded"
+                  className="px-3 py-1 bg-blue-600 rounded"
                 >
                   -
                 </button>
-                <span>{quantidades[i]}</span>
+                <span className="w-6 text-center">{quantidades[i]}</span>
                 <button
                   onClick={() => alterarQuantidade(i, 1)}
-                  className="px-2 bg-blue-600 rounded"
+                  className="px-3 py-1 bg-blue-600 rounded"
                 >
                   +
                 </button>
@@ -137,7 +156,7 @@ export default function SalgadosSesc() {
 
       <button
         onClick={irParaCarrinho}
-        className="bg-yellow-400 text-black font-semibold py-2 px-6 rounded-lg mt-6"
+        className="bg-yellow-400 text-black font-semibold py-3 px-8 rounded-lg mt-6 text-lg"
       >
         Adicionar ao carrinho
       </button>
