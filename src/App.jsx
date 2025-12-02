@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./hooks/useAuth";
 import Lanchonete from "./pages/Lanchonete";
 import Cadastro from "./pages/Cadastro";
 import LoginAdm from "./pages/LoginAdm";
@@ -15,6 +16,8 @@ import Carrinho from "./pages/Carrinho";
 import Pagamento from "./pages/Pagamento";
 import Profile from "./pages/Profile";
 import EditarPerfil from "./pages/EditarPerfil";
+import SelecionarAdm from "./pages/Selecionaradm";
+
 
 
 import Senac from "./pages/Senac";
@@ -28,8 +31,9 @@ import { Toaster } from "./components/ui/toaster";
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster />
-      <Routes>
+      <AuthProvider>
+        <Toaster />
+        <Routes>
         <Route path="/" element={<Lanchonete />} />
         <Route path="/cadastro" element={<Cadastro />} />
         <Route path="/loginAdm" element={<LoginAdm />} />
@@ -55,7 +59,9 @@ export default function App() {
         <Route path="/bebida" element={<Bebida />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/payment" element={<Payment />} />
-      </Routes>
+        <Route path="/selecionarAdm" element={<SelecionarAdm />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

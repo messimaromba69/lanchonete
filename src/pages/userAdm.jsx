@@ -24,12 +24,36 @@ export default function UserAdm() {
   // busca
   const [busca, setBusca] = useState("");
 
+  // mostrar todos sem paginação
+  const [showAll, setShowAll] = useState(false);
+
   // paginação
   const [pagina, setPagina] = useState(1);
   const porPagina = 6;
 
   // modal edição
   const [editando, setEditando] = useState(null);
+
+  // formatação semelhante ao EditarPerfil
+  function maskPhone(v) {
+    if (!v) return "";
+    return String(v)
+      .replace(/\D/g, "")
+      .replace(/(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{5})(\d)/, "$1-$2")
+      .replace(/(-\d{4})\d+?$/, "$1");
+  }
+
+  function maskCEP(v) {
+    if (!v) return "";
+    return String(v).replace(/\D/g, "").replace(/(\d{5})(\d)/, "$1-$2").slice(0, 9);
+  }
+
+  function formatDateDisplay(iso) {
+    if (!iso) return "";
+    if (typeof iso === "string" && iso.includes("-")) return iso.split("-").reverse().join("/");
+    return iso;
+  }
 
   useEffect(() => {
     buscarUsuarios();
@@ -206,12 +230,28 @@ export default function UserAdm() {
     const { id, perfil } = editando;
 
     try {
+      // DEBUG: verificar sessão atual antes de tentar o upsert
+      try {
+        const sessionResp = await supabase.auth.getSession();
+        console.log('salvarEdicao - sessão atual:', sessionResp?.data?.session || null);
+      } catch (sessErr) {
+        console.warn('salvarEdicao - falha ao obter sessão:', sessErr);
+      }
+
       // Tentamos persistir no perfil via upsert para garantir todos os campos
       const upsertData = { ...perfil, id_user: id };
-      const { error } = await supabase.from("perfil").upsert(upsertData, { onConflict: "id_user" });
+      const { data: upserted, error, status } = await supabase
+        .from("perfil")
+        .upsert(upsertData, { onConflict: "id_user" });
+
       if (error) {
-        console.error("Erro ao salvar perfil:", error);
-        alert("Erro ao salvar: " + (error.message || JSON.stringify(error)));
+        // Mostra detalhes do erro para diagnóstico (status, message, details)
+        console.error("Erro ao salvar perfil:", { status, error });
+        if (status === 401) {
+          alert('Falha 401: não autorizado. Verifique se há sessão válida e se as policies RLS permitem esta operação para seu usuário.');
+        } else {
+          alert("Erro ao salvar: " + (error.message || JSON.stringify(error)));
+        }
         return;
       }
 
@@ -231,11 +271,10 @@ export default function UserAdm() {
   );
 
   // paginação
-  const totalPaginas = Math.max(1, Math.ceil(filtrado.length / porPagina));
-  const exibidos = filtrado.slice(
-    (pagina - 1) * porPagina,
-    pagina * porPagina
-  );
+  const totalPaginas = showAll ? 1 : Math.max(1, Math.ceil(filtrado.length / porPagina));
+  const exibidos = showAll
+    ? filtrado
+    : filtrado.slice((pagina - 1) * porPagina, pagina * porPagina);
 
   // =======================================================
   // RENDER
@@ -260,6 +299,12 @@ export default function UserAdm() {
           value={busca}
           onChange={(e) => setBusca(e.target.value)}
         />
+        <button
+          onClick={() => { setShowAll((s) => !s); setPagina(1); }}
+          className="ml-3 text-sm px-3 py-1 border rounded"
+        >
+          {showAll ? 'Mostrar página' : 'Mostrar todos'}
+        </button>
       </div>
 
       {/* MODAL DE EDIÇÃO DO USUÁRIO */}
@@ -459,15 +504,15 @@ export default function UserAdm() {
                             <h3 className="font-semibold">Dados do Aluno</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-sm">
                               <div><b>Nome:</b> {u.perfil?.nome || '-'}</div>
-                              <div><b>Telefone:</b> {u.perfil?.telefone || '-'}</div>
-                              <div><b>CEP:</b> {u.perfil?.cep || '-'}</div>
+                              <div><b>Telefone:</b> {u.perfil?.telefone ? maskPhone(u.perfil.telefone) : '-'}</div>
+                              <div><b>CEP:</b> {u.perfil?.cep ? maskCEP(u.perfil.cep) : '-'}</div>
                               <div><b>Cidade:</b> {u.perfil?.cidade || '-'}</div>
                               <div><b>Estado:</b> {u.perfil?.estado || '-'}</div>
                               <div><b>Rua:</b> {u.perfil?.rua || '-'}</div>
                               <div><b>Bairro:</b> {u.perfil?.bairro || '-'}</div>
                               <div><b>Complemento:</b> {u.perfil?.complemento || '-'}</div>
                               <div><b>Sexo:</b> {u.perfil?.sexo || '-'}</div>
-                              <div><b>Data Nasc.:</b> {u.perfil?.data_nascimento || '-'}</div>
+                              <div><b>Data Nasc.:</b> {u.perfil?.data_nascimento ? formatDateDisplay(u.perfil.data_nascimento) : '-'}</div>
                               <div className="col-span-2">
                                 <b>Foto:</b> {u.perfil?.foto ? <img src={u.perfil.foto} alt="foto" className="h-16 inline-block ml-2" /> : ' -'}
                               </div>

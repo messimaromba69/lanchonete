@@ -64,7 +64,7 @@ export default function EditarPerfil() {
       .from("perfil")
       .select("*")
       .eq("id_user", user.id)
-      .single();
+      .maybeSingle();
 
     if (data) {
       setForm({
@@ -151,7 +151,7 @@ export default function EditarPerfil() {
             <select
               key={item.key}
               className="w-full bg-gray-200 p-3 rounded mb-3"
-              value={form.sexo || ""}
+              value={form.sexo ?? ""}
               onChange={(e) => setForm({ ...form, sexo: e.target.value })}
             >
               <option value="">Selecione</option>
@@ -164,7 +164,7 @@ export default function EditarPerfil() {
               key={item.key}
               className="w-full bg-gray-200 p-3 rounded mb-3"
               placeholder={item.placeholder}
-              value={form[item.key]}
+              value={form[item.key] ?? ""}
               onChange={(e) =>
                 setForm({
                   ...form,
