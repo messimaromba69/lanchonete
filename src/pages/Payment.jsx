@@ -58,7 +58,7 @@ export default function PagamentoSenac() {
     }
 
     if (!id_pedido) {
-      alert("ID do pedido não encontrado. Volte ao carrinho e tente novamente.");
+      toast({ title: "ID do pedido não encontrado", description: "Volte ao carrinho e tente novamente.", variant: "destructive" });
       return;
     }
 

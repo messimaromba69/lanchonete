@@ -68,10 +68,33 @@ export default function UserAdm() {
           nome: u.nome || "",
           telefone: u.telefone || "",
           id_escola: u.id_escola || null,
+          // campos extras serão preenchidos pela query em seguida quando existir
+          cep: null,
+          cidade: null,
+          estado: null,
+          rua: null,
+          bairro: null,
+          complemento: null,
+          sexo: null,
+          data_nascimento: null,
+          foto: null,
         },
       }));
-
-      setUsuarios(lista);
+      // Buscamos perfis completos e mesclamos para garantir todos os campos
+      try {
+        const { data: perfis } = await supabase.from("perfil").select("*");
+        const listaFinal = lista.map((u) => ({
+          ...u,
+          perfil: {
+            ...(perfis?.find((p) => p.id_user === u.id) || {}),
+            ...u.perfil,
+          },
+        }));
+        setUsuarios(listaFinal);
+      } catch (e2) {
+        // se falhar, mantemos a lista parcial
+        setUsuarios(lista);
+      }
       setAdminAllowed(true);
 
       carregarPedidosELanchonetes();
@@ -138,26 +161,66 @@ export default function UserAdm() {
     buscarUsuarios();
   };
 
+  const removerPedido = async (id_pedido) => {
+    if (!confirm("Deseja realmente excluir este pedido?")) return;
+    try {
+      const { error } = await supabase.from("pedido").delete().eq("id_pedido", id_pedido);
+      if (error) {
+        console.error("Erro ao deletar pedido:", error);
+        alert("Erro ao deletar pedido: " + (error.message || JSON.stringify(error)));
+        return;
+      }
+      carregarPedidosELanchonetes();
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao deletar pedido.");
+    }
+  };
+
+  const removerEscola = async (id_escola) => {
+    if (!id_escola) {
+      alert("Escola inválida");
+      return;
+    }
+    if (!confirm("Deseja realmente excluir esta escola? Isso removerá apenas a escola - verifique dependências.")) return;
+    try {
+      const { error } = await supabase.from("escola").delete().eq("id_escola", id_escola);
+      if (error) {
+        console.error("Erro ao deletar escola:", error);
+        alert("Erro ao deletar escola: " + (error.message || JSON.stringify(error)));
+        return;
+      }
+      // atualizar listas
+      buscarEscolas();
+      buscarUsuarios();
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao deletar escola.");
+    }
+  };
+
   // =======================================================
   // SALVAR EDIÇÃO
   // =======================================================
   const salvarEdicao = async () => {
     const { id, perfil } = editando;
 
-    const { error } = await supabase.rpc("admin_update_user", {
-      uid: id,
-      nome: perfil.nome,
-      telefone: perfil.telefone,
-      id_escola: perfil.id_escola,
-    });
+    try {
+      // Tentamos persistir no perfil via upsert para garantir todos os campos
+      const upsertData = { ...perfil, id_user: id };
+      const { error } = await supabase.from("perfil").upsert(upsertData, { onConflict: "id_user" });
+      if (error) {
+        console.error("Erro ao salvar perfil:", error);
+        alert("Erro ao salvar: " + (error.message || JSON.stringify(error)));
+        return;
+      }
 
-    if (error) {
+      setEditando(null);
+      buscarUsuarios();
+    } catch (e) {
+      console.error("Erro salvarEdicao:", e);
       alert("Erro ao salvar");
-      return;
     }
-
-    setEditando(null);
-    buscarUsuarios();
   };
 
   // filtro
@@ -198,6 +261,127 @@ export default function UserAdm() {
           onChange={(e) => setBusca(e.target.value)}
         />
       </div>
+
+      {/* MODAL DE EDIÇÃO DO USUÁRIO */}
+      {editando && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl w-full max-w-2xl shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-semibold">Editar Usuário</h2>
+              <button onClick={() => setEditando(null)} className="text-gray-600">Fechar</button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                type="text"
+                className="border p-2 rounded"
+                placeholder="Nome"
+                value={editando.perfil?.nome || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, nome: e.target.value } })}
+              />
+
+              <input
+                type="text"
+                className="border p-2 rounded"
+                placeholder="Telefone"
+                value={editando.perfil?.telefone || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, telefone: e.target.value } })}
+              />
+
+              <input
+                type="text"
+                className="border p-2 rounded"
+                placeholder="CEP"
+                value={editando.perfil?.cep || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, cep: e.target.value } })}
+              />
+
+              <input
+                type="text"
+                className="border p-2 rounded"
+                placeholder="Cidade"
+                value={editando.perfil?.cidade || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, cidade: e.target.value } })}
+              />
+
+              <input
+                type="text"
+                className="border p-2 rounded"
+                placeholder="Estado"
+                value={editando.perfil?.estado || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, estado: e.target.value } })}
+              />
+
+              <input
+                type="text"
+                className="border p-2 rounded"
+                placeholder="Rua"
+                value={editando.perfil?.rua || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, rua: e.target.value } })}
+              />
+
+              <input
+                type="text"
+                className="border p-2 rounded"
+                placeholder="Bairro"
+                value={editando.perfil?.bairro || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, bairro: e.target.value } })}
+              />
+
+              <input
+                type="text"
+                className="border p-2 rounded"
+                placeholder="Complemento"
+                value={editando.perfil?.complemento || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, complemento: e.target.value } })}
+              />
+
+              <select
+                className="border p-2 rounded"
+                value={editando.perfil?.sexo || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, sexo: e.target.value } })}
+              >
+                <option value="">Sexo</option>
+                <option value="M">Masculino</option>
+                <option value="F">Feminino</option>
+                <option value="O">Outro</option>
+              </select>
+
+              <input
+                type="date"
+                className="border p-2 rounded"
+                placeholder="Data Nascimento"
+                value={editando.perfil?.data_nascimento ? String(editando.perfil.data_nascimento).slice(0,10) : ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, data_nascimento: e.target.value } })}
+              />
+
+              <input
+                type="text"
+                className="border p-2 rounded md:col-span-2"
+                placeholder="URL da Foto"
+                value={editando.perfil?.foto || ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, foto: e.target.value } })}
+              />
+
+              <select
+                className="border p-2 rounded md:col-span-2"
+                value={editando.perfil?.id_escola ?? ""}
+                onChange={(e) => setEditando({ ...editando, perfil: { ...editando.perfil, id_escola: e.target.value === "" ? null : Number(e.target.value) } })}
+              >
+                <option value="">Selecione Escola</option>
+                {escolas.map((esc) => (
+                  <option key={esc.id_escola} value={esc.id_escola}>{esc.nome_escola}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-4">
+              <button onClick={() => setEditando(null)} className="px-4 py-2 rounded border">Cancelar</button>
+              <button onClick={salvarEdicao} className="px-4 py-2 rounded bg-blue-600 text-white">Salvar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TABELA */}
       <div className="bg-white shadow-xl rounded-xl p-6">
@@ -241,7 +425,7 @@ export default function UserAdm() {
 
                       <td className="p-3 flex gap-4">
                         <button
-                          onClick={() => setEditando(u)}
+                          onClick={() => setEditando({ ...u, perfil: { ...(u.perfil || {}) } })}
                           className="text-blue-600"
                         >
                           <Pencil size={22} />
@@ -270,26 +454,95 @@ export default function UserAdm() {
                     {showOrders[u.id] && (
                       <tr key={u.id + "-orders"} className="bg-gray-50">
                         <td colSpan={5} className="p-4">
+                          {/* Dados completos do aluno */}
+                          <div className="bg-white p-4 rounded mb-4">
+                            <h3 className="font-semibold">Dados do Aluno</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-sm">
+                              <div><b>Nome:</b> {u.perfil?.nome || '-'}</div>
+                              <div><b>Telefone:</b> {u.perfil?.telefone || '-'}</div>
+                              <div><b>CEP:</b> {u.perfil?.cep || '-'}</div>
+                              <div><b>Cidade:</b> {u.perfil?.cidade || '-'}</div>
+                              <div><b>Estado:</b> {u.perfil?.estado || '-'}</div>
+                              <div><b>Rua:</b> {u.perfil?.rua || '-'}</div>
+                              <div><b>Bairro:</b> {u.perfil?.bairro || '-'}</div>
+                              <div><b>Complemento:</b> {u.perfil?.complemento || '-'}</div>
+                              <div><b>Sexo:</b> {u.perfil?.sexo || '-'}</div>
+                              <div><b>Data Nasc.:</b> {u.perfil?.data_nascimento || '-'}</div>
+                              <div className="col-span-2">
+                                <b>Foto:</b> {u.perfil?.foto ? <img src={u.perfil.foto} alt="foto" className="h-16 inline-block ml-2" /> : ' -'}
+                              </div>
+                              <div className="col-span-2">
+                                <b>Escola cadastrada:</b>{' '}
+                                {escolas.find((e) => e.id_escola === u.perfil?.id_escola)?.nome_escola || '-'}
+                                {u.perfil?.id_escola && (
+                                  <button
+                                    onClick={() => removerEscola(u.perfil.id_escola)}
+                                    className="ml-3 text-red-600 text-sm"
+                                  >
+                                    <Trash2 size={16} /> Excluir Escola
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
                           {(pedidosByUser[u.id] || []).length === 0 ? (
-                            <p className="text-sm text-gray-500">
-                              Nenhum pedido deste usuário.
-                            </p>
+                            <p className="text-sm text-gray-500">Nenhum pedido deste usuário.</p>
                           ) : (
                             pedidosByUser[u.id].map((p) => (
-                              <div
-                                key={p.id_pedido}
-                                className="bg-white p-3 border rounded mb-2"
-                              >
-                                <p>
-                                  <b>Pedido:</b> {p.id_pedido}
-                                </p>
-                                <p>
-                                  <b>Status:</b> {p.status_pedido}
-                                </p>
-                                <p>
-                                  <b>Total:</b> R${" "}
-                                  {Number(p.valor_total).toFixed(2)}
-                                </p>
+                              <div key={p.id_pedido} className="bg-white p-3 border rounded mb-2">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p><b>Pedido:</b> {p.id_pedido}</p>
+                                    <p><b>Status:</b> {p.status_pedido}</p>
+                                    <p><b>Data:</b> {p.created_at ? new Date(p.created_at).toLocaleString() : '-'}</p>
+                                    <p><b>Lanchonete:</b> {lanchonetesMap[p.id_lanchonete] || p.id_lanchonete || '-'}</p>
+                                  </div>
+
+                                  <div className="text-right">
+                                    <p><b>Total:</b> R$ {Number(p.valor_total || 0).toFixed(2)}</p>
+                                    <p><b>Pagamento:</b> {p.metodo_pagamento || '-'}</p>
+                                  </div>
+                                </div>
+
+                                <div className="mt-3">
+                                  <b>Itens:</b>
+                                  {Array.isArray(p.itens) ? (
+                                    <ul className="list-disc ml-6 mt-2">
+                                      {p.itens.map((it, idx) => (
+                                        <li key={idx} className="text-sm">
+                                          {it.nome_produto || it.nome || `produto ${it.id_produto || ''}`} — x{it.quantidade || it.quantidade_item || it.qty || 1}{' '}
+                                          {it.preco_unitario || it.preco || it.preco_produto ? `R$ ${Number(it.preco_unitario || it.preco || it.preco_produto).toFixed(2)}` : ''}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : p.itens ? (
+                                    <pre className="text-sm bg-gray-100 p-2 rounded mt-2 overflow-auto">{JSON.stringify(p.itens, null, 2)}</pre>
+                                  ) : (
+                                    <p className="text-sm text-gray-500">Sem itens registrados.</p>
+                                  )}
+
+                                  <div className="mt-2 flex gap-4 items-center">
+                                    <button
+                                      onClick={() => {
+                                        try {
+                                          navigator.clipboard.writeText(JSON.stringify(p, null, 2));
+                                          // using simple alert here is fine as toast isn't imported in this file's previous state
+                                          alert('JSON do pedido copiado para a área de transferência.');
+                                        } catch (e) {
+                                          console.error('Erro ao copiar JSON do pedido', e);
+                                        }
+                                      }}
+                                      className="text-xs text-blue-600"
+                                    >
+                                      Ver JSON do pedido
+                                    </button>
+
+                                    <button onClick={() => removerPedido(p.id_pedido)} className="text-xs text-red-600">
+                                      <Trash2 size={14} /> Excluir Pedido
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             ))
                           )}
@@ -303,105 +556,6 @@ export default function UserAdm() {
           </table>
         )}
       </div>
-
-      {/* PAGINAÇÃO */}
-      <div className="flex gap-6 mt-6 text-xl items-center">
-        <button
-          disabled={pagina === 1}
-          onClick={() => setPagina(pagina - 1)}
-        >
-          <ChevronLeft size={32} />
-        </button>
-
-        <span>
-          Página {pagina} de {totalPaginas}
-        </span>
-
-        <button
-          disabled={pagina === totalPaginas}
-          onClick={() => setPagina(pagina + 1)}
-        >
-          <ChevronRight size={32} />
-        </button>
-      </div>
-
-      {/* MODAL EDITAR */}
-      {editando && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl w-[400px] space-y-4 shadow-2xl">
-            <h2 className="text-2xl font-bold mb-3">Editar Usuário</h2>
-
-            <input
-              type="text"
-              className="w-full border p-3 rounded"
-              value={editando.perfil.nome}
-              onChange={(e) =>
-                setEditando({
-                  ...editando,
-                  perfil: { ...editando.perfil, nome: e.target.value },
-                })
-              }
-              placeholder="Nome"
-            />
-
-            <input
-              type="text"
-              className="w-full border p-3 rounded"
-              value={editando.perfil.telefone}
-              onChange={(e) =>
-                setEditando({
-                  ...editando,
-                  perfil: {
-                    ...editando.perfil,
-                    telefone: e.target.value,
-                  },
-                })
-              }
-              placeholder="Telefone"
-            />
-
-            <select
-              className="w-full border p-3 rounded"
-              value={editando.perfil.id_escola ?? ""}
-              onChange={(e) =>
-                setEditando({
-                  ...editando,
-                  perfil: {
-                    ...editando.perfil,
-                    id_escola: e.target.value === "" ? null : Number(e.target.value),
-                  },
-                })
-              }
-            >
-              <option value="">Selecione uma Escola</option>
-              {escolas.map((esc) => (
-                <option
-                  key={esc.id_escola}
-                  value={esc.id_escola}
-                >
-                  {esc.nome_escola}
-                </option>
-              ))}
-            </select>
-
-            <div className="flex justify-between">
-              <button
-                onClick={() => setEditando(null)}
-                className="text-gray-600"
-              >
-                Cancelar
-              </button>
-
-              <button
-                onClick={salvarEdicao}
-                className="bg-blue-600 px-4 py-2 rounded text-white"
-              >
-                Salvar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

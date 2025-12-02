@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../../supabase/supabase";
+import { toast } from "../hooks/use-toast";
 
 import { ArrowLeft } from "lucide-react";
 
@@ -12,9 +13,7 @@ export default function Select() {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id;
       if (!userId) {
-        alert(
-          "A operação exige que você esteja logado. Faça login para continuar."
-        );
+        toast({ title: "Login necessário", description: "A operação exige que você esteja logado. Faça login para continuar.", variant: "destructive" });
         navigate("/loginUser"); // ajuste para sua rota de login se necessário
         return;
       }
@@ -37,12 +36,10 @@ export default function Select() {
           selectError?.message || selectError?.details || JSON.stringify(selectError);
         console.error("Erro ao buscar escola existente:", selectError);
         if (selectError?.status === 401) {
-          alert(
-            "Erro 401 ao acessar Supabase. Verifique SUPABASE_URL e SUPABASE_ANON_KEY, além das políticas RLS no painel do Supabase."
-          );
+          toast({ title: "Erro 401", description: "Erro 401 ao acessar Supabase. Verifique SUPABASE_URL e SUPABASE_ANON_KEY, além das políticas RLS no painel do Supabase.", variant: "destructive" });
           return;
         }
-        alert("Erro ao buscar escola: " + msg);
+        toast({ title: "Erro ao buscar escola", description: msg, variant: "destructive" });
         return;
       }
 
@@ -65,12 +62,10 @@ export default function Select() {
         if (lanchoError) {
           console.error("Erro ao salvar lanchonete:", lanchoError);
           if (lanchoError?.status === 401 || lanchoError?.code === "42501") {
-            alert(
-              "Operação bloqueada por políticas de segurança (RLS). Certifique-se de que o usuário tem permissão para inserir."
-            );
+            toast({ title: "Operação bloqueada", description: "Operação bloqueada por políticas de segurança (RLS). Certifique-se de que o usuário tem permissão para inserir.", variant: "destructive" });
             return;
           }
-          alert("Erro ao salvar lanchonete: " + JSON.stringify(lanchoError));
+          toast({ title: "Erro ao salvar lanchonete", description: JSON.stringify(lanchoError), variant: "destructive" });
           return;
         }
 
@@ -97,12 +92,10 @@ export default function Select() {
       if (escolaError) {
         console.error("Erro ao salvar escola:", escolaError);
         if (escolaError?.status === 401 || escolaError?.code === "42501") {
-          alert(
-            "Operação bloqueada por políticas de segurança (RLS) ou credenciais inválidas. Faça login com um usuário autorizado ou ajuste as políticas no painel Supabase."
-          );
+          toast({ title: "Operação bloqueada", description: "Operação bloqueada por políticas de segurança (RLS) ou credenciais inválidas. Faça login com um usuário autorizado ou ajuste as políticas no painel Supabase.", variant: "destructive" });
           return;
         }
-        alert("Erro ao salvar escola: " + JSON.stringify(escolaError));
+        toast({ title: "Erro ao salvar escola", description: JSON.stringify(escolaError), variant: "destructive" });
         return;
       }
 
@@ -128,12 +121,10 @@ export default function Select() {
       if (lanchoError) {
         console.error("Erro ao salvar lanchonete:", lanchoError);
         if (lanchoError?.status === 401 || lanchoError?.code === "42501") {
-          alert(
-            "Operação bloqueada por políticas de segurança (RLS) ou credenciais inválidas. Faça login com um usuário autorizado ou ajuste as políticas no painel Supabase."
-          );
+          toast({ title: "Operação bloqueada", description: "Operação bloqueada por políticas de segurança (RLS) ou credenciais inválidas. Faça login com um usuário autorizado ou ajuste as políticas no painel Supabase.", variant: "destructive" });
           return;
         }
-        alert("Erro ao salvar lanchonete: " + JSON.stringify(lanchoError));
+        toast({ title: "Erro ao salvar lanchonete", description: JSON.stringify(lanchoError), variant: "destructive" });
         return;
       }
 
@@ -154,7 +145,7 @@ export default function Select() {
     } catch (err) {
       const msg = err?.message || JSON.stringify(err);
       console.error("Erro inesperado:", err);
-      alert("Erro inesperado: " + msg);
+      toast({ title: "Erro inesperado", description: msg, variant: "destructive" });
     }
   };
 

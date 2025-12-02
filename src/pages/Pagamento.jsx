@@ -60,7 +60,7 @@ export default function PagamentoSesc() {
     }
 
     if (!id_pedido) {
-      alert("ID do pedido não encontrado. Volte ao carrinho e tente novamente.");
+      toast({ title: "ID do pedido não encontrado", description: "Volte ao carrinho e tente novamente.", variant: "destructive" });
       return;
     }
 
@@ -131,13 +131,13 @@ export default function PagamentoSesc() {
 
       if (fetchUpdatedErr) {
         console.error("Erro ao buscar pedido atualizado:", fetchUpdatedErr);
-        alert("Pedido atualizado, mas não foi possível confirmar a atualização. Verifique no painel.");
+        toast({ title: "Pedido atualizado, mas não foi possível confirmar a atualização.", description: "Verifique no painel.", variant: "destructive" });
         return;
       }
 
       if (!updatedPedido) {
         console.warn("Update não refletido (fetch retornou null)", { id_pedido });
-        alert("Pedido não foi atualizado (0 linhas afetadas). Verifique permissões/ID do pedido.");
+        toast({ title: "Pedido não foi atualizado (0 linhas afetadas).", description: "Verifique permissões/ID do pedido.", variant: "destructive" });
         return;
       }
 

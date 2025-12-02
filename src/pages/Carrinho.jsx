@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { FaUserCircle } from "react-icons/fa";   // <- FALTAVA ISSO
 import fundoSesc from "./assets/sesc.png";
 import { supabase } from "../../supabase/supabase";
+import { toast } from "../hooks/use-toast";
 
 export default function CarrinhoSesc() {
   const navigate = useNavigate();
@@ -70,7 +71,7 @@ export default function CarrinhoSesc() {
   // Finaliza compra e envia para o Supabase
   const finalizarCompra = async () => {
     if (itens.length === 0) {
-      alert("Seu carrinho está vazio!");
+      toast({ title: "Seu carrinho está vazio!", variant: "destructive" });
       return;
     }
 
@@ -79,7 +80,7 @@ export default function CarrinhoSesc() {
       const userId = userData?.user?.id;
 
       if (!userId) {
-        alert("Você precisa estar logado!");
+        toast({ title: "Login necessário", description: "Você precisa estar logado!", variant: "destructive" });
         return;
       }
 
@@ -143,9 +144,7 @@ export default function CarrinhoSesc() {
       // Se não conseguimos determinar id_lanchonete, aborta e pede correção (evita pedidos sem vinculo)
       if (idLanchonete === null) {
         console.warn("id_lanchonete está nulo — abortando insert para evitar pedido sem lanchonete.");
-        alert(
-          "Não foi possível identificar a lanchonete do pedido. Verifique os itens do carrinho e tente novamente."
-        );
+        toast({ title: "Lanchonete não identificada", description: "Não foi possível identificar a lanchonete do pedido. Verifique os itens do carrinho e tente novamente.", variant: "destructive" });
         return;
       }
 
@@ -160,7 +159,7 @@ export default function CarrinhoSesc() {
 
       if (insertError) {
         console.error("Erro ao inserir pedido:", insertError);
-        alert("Erro ao criar pedido: " + (insertError.message || JSON.stringify(insertError)));
+        toast({ title: "Erro ao criar pedido", description: insertError.message || JSON.stringify(insertError), variant: "destructive" });
         return;
       }
 
@@ -194,7 +193,7 @@ export default function CarrinhoSesc() {
 
       if (!createdId) {
         console.error("id_pedido não retornado após insert", { pedidoData });
-        alert("Erro ao criar pedido: id do pedido não foi retornado pelo servidor.");
+        toast({ title: "Erro ao criar pedido", description: "id do pedido não foi retornado pelo servidor.", variant: "destructive" });
         return;
       }
 
@@ -203,7 +202,7 @@ export default function CarrinhoSesc() {
       navigate("/pagamento", { state: { id_pedido: createdId } });
     } catch (e) {
       console.log(e);
-      alert("Erro inesperado.");
+      toast({ title: "Erro inesperado", variant: "destructive" });
     }
   };
 

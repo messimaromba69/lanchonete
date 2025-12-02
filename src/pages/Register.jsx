@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "../../supabase/supabase"; // ajuste caminho
+import { toast } from "../hooks/use-toast";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -14,12 +15,12 @@ export default function Register() {
     e.preventDefault();
 
     if (!email || !password || !confirm) {
-      alert("Preencha todos os campos!");
+      toast({ title: "Preencha todos os campos!", variant: "destructive" });
       return;
     }
 
     if (password !== confirm) {
-      alert("As senhas não coincidem!");
+      toast({ title: "As senhas não coincidem!", variant: "destructive" });
       return;
     }
 
@@ -38,14 +39,14 @@ export default function Register() {
     });
 
     if (error) {
-      alert("Erro ao criar conta: " + error.message);
+      toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
       console.log(error);
       setLoading(false);
       return;
     }
 
     setLoading(false);
-    alert("Conta criada com sucesso!");
+    toast({ title: "Conta criada com sucesso!" });
 
     // 2️⃣ Redirecionar para login
     navigate("/loginuser");

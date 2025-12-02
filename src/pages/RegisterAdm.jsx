@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "../hooks/use-toast";
 
 export default function RegisterAdm() {
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ export default function RegisterAdm() {
 
     // Verifica se o email já existe
     if (admins.some((a) => a.email === email)) {
-      alert("Este email já está registrado como administrador!");
+      toast({ title: "Este email já está registrado como administrador!", variant: "destructive" });
       return;
     }
 
@@ -30,7 +31,7 @@ export default function RegisterAdm() {
     admins.push(newAdmin);
     localStorage.setItem("admins", JSON.stringify(admins));
 
-    alert("Administrador criado com sucesso!");
+    toast({ title: "Administrador criado com sucesso!" });
     navigate("/loginAdm");
   };
 
