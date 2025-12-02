@@ -17,6 +17,7 @@ import Pagamento from "./pages/Pagamento";
 import Profile from "./pages/Profile";
 import EditarPerfil from "./pages/EditarPerfil";
 import SelecionarAdm from "./pages/Selecionaradm";
+import AdmMaster from "./pages/AdmMaster";
 
 
 
@@ -52,6 +53,7 @@ export default function App() {
         <Route path="/pagamento" element={<Pagamento />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/editar-perfil" element={<EditarPerfil />} />
+        <Route path="/adm-master" element={<AdmMaster />} />
 
         <Route path="/senac" element={<Senac/>} />
         <Route path="/salgado" element={<Salgado/>} />

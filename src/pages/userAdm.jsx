@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabase/supabase";
+import { notify } from "@/lib/customToast";
 import {
   ArrowLeft,
   Trash2,
@@ -179,7 +180,7 @@ export default function UserAdm() {
 
     const { error } = await supabase.rpc("admin_delete_user", { uid: id });
     if (error) {
-      alert("Erro ao excluir");
+      notify({ description: "Erro ao excluir", variant: "destructive" });
       return;
     }
     buscarUsuarios();
@@ -191,19 +192,19 @@ export default function UserAdm() {
       const { error } = await supabase.from("pedido").delete().eq("id_pedido", id_pedido);
       if (error) {
         console.error("Erro ao deletar pedido:", error);
-        alert("Erro ao deletar pedido: " + (error.message || JSON.stringify(error)));
+        notify({ description: "Erro ao deletar pedido: " + (error.message || JSON.stringify(error)), variant: "destructive" });
         return;
       }
       carregarPedidosELanchonetes();
     } catch (e) {
       console.error(e);
-      alert("Erro ao deletar pedido.");
+      notify({ description: "Erro ao deletar pedido.", variant: "destructive" });
     }
   };
 
   const removerEscola = async (id_escola) => {
     if (!id_escola) {
-      alert("Escola inválida");
+      notify({ description: "Escola inválida", variant: "destructive" });
       return;
     }
     if (!confirm("Deseja realmente excluir esta escola? Isso removerá apenas a escola - verifique dependências.")) return;
@@ -211,7 +212,7 @@ export default function UserAdm() {
       const { error } = await supabase.from("escola").delete().eq("id_escola", id_escola);
       if (error) {
         console.error("Erro ao deletar escola:", error);
-        alert("Erro ao deletar escola: " + (error.message || JSON.stringify(error)));
+        notify({ description: "Erro ao deletar escola: " + (error.message || JSON.stringify(error)), variant: "destructive" });
         return;
       }
       // atualizar listas
@@ -219,7 +220,7 @@ export default function UserAdm() {
       buscarUsuarios();
     } catch (e) {
       console.error(e);
-      alert("Erro ao deletar escola.");
+      notify({ description: "Erro ao deletar escola.", variant: "destructive" });
     }
   };
 
@@ -248,9 +249,9 @@ export default function UserAdm() {
         // Mostra detalhes do erro para diagnóstico (status, message, details)
         console.error("Erro ao salvar perfil:", { status, error });
         if (status === 401) {
-          alert('Falha 401: não autorizado. Verifique se há sessão válida e se as policies RLS permitem esta operação para seu usuário.');
+          notify({ description: 'Falha 401: não autorizado. Verifique se há sessão válida e se as policies RLS permitem esta operação para seu usuário.', variant: 'destructive' });
         } else {
-          alert("Erro ao salvar: " + (error.message || JSON.stringify(error)));
+          notify({ description: "Erro ao salvar: " + (error.message || JSON.stringify(error)), variant: 'destructive' });
         }
         return;
       }
@@ -259,7 +260,7 @@ export default function UserAdm() {
       buscarUsuarios();
     } catch (e) {
       console.error("Erro salvarEdicao:", e);
-      alert("Erro ao salvar");
+      notify({ description: "Erro ao salvar", variant: 'destructive' });
     }
   };
 
@@ -281,7 +282,7 @@ export default function UserAdm() {
   // =======================================================
   return (
     <div className="min-h-screen bg-gray-100 p-8">
-      <button onClick={() => navigate("/")} className="text-black mb-6">
+      <button onClick={() => navigate(-1)} className="text-black mb-6">
         <ArrowLeft size={40} />
       </button>
 
@@ -572,8 +573,7 @@ export default function UserAdm() {
                                       onClick={() => {
                                         try {
                                           navigator.clipboard.writeText(JSON.stringify(p, null, 2));
-                                          // using simple alert here is fine as toast isn't imported in this file's previous state
-                                          alert('JSON do pedido copiado para a área de transferência.');
+                                          notify({ description: 'JSON do pedido copiado para a área de transferência.' });
                                         } catch (e) {
                                           console.error('Erro ao copiar JSON do pedido', e);
                                         }

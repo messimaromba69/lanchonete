@@ -83,26 +83,33 @@ export default function Select() {
       }
 
       // 1️⃣ INSERIR ESCOLA (caso não exista)
-      const { data: escolaInsert, error: escolaError } = await supabase
-        .from("escola")
-        .insert([{ nome_escola: nomeEscola }])
-        .select()
-        .single();
+      // Nota: não recriamos automaticamente as escolas 'Sesc' e 'Senac'.
+      let idEscola = null;
+      if (nomeEscola !== 'Sesc' && nomeEscola !== 'Senac') {
+        const { data: escolaInsert, error: escolaError } = await supabase
+          .from("escola")
+          .insert([{ nome_escola: nomeEscola }])
+          .select()
+          .single();
 
-      if (escolaError) {
-        console.error("Erro ao salvar escola:", escolaError);
-        if (escolaError?.status === 401 || escolaError?.code === "42501") {
-          toast({ title: "Operação bloqueada", description: "Operação bloqueada por políticas de segurança (RLS) ou credenciais inválidas. Faça login com um usuário autorizado ou ajuste as políticas no painel Supabase.", variant: "destructive" });
+        if (escolaError) {
+          console.error("Erro ao salvar escola:", escolaError);
+          if (escolaError?.status === 401 || escolaError?.code === "42501") {
+            toast({ title: "Operação bloqueada", description: "Operação bloqueada por políticas de segurança (RLS) ou credenciais inválidas. Faça login com um usuário autorizado ou ajuste as políticas no painel Supabase.", variant: "destructive" });
+            return;
+          }
+          toast({ title: "Erro ao salvar escola", description: JSON.stringify(escolaError), variant: "destructive" });
           return;
         }
-        toast({ title: "Erro ao salvar escola", description: JSON.stringify(escolaError), variant: "destructive" });
-        return;
+
+        console.log("Escola salva:", escolaInsert);
+
+        // PEGAR O ID CERTO
+        idEscola = escolaInsert.id_escola;
+      } else {
+        // Para Sesc/Senac não criamos o registro em `escola`; mantemos idEscola null
+        idEscola = null;
       }
-
-      console.log("Escola salva:", escolaInsert);
-
-      // PEGAR O ID CERTO
-      const idEscola = escolaInsert.id_escola;
 
       // 2️⃣ INSERIR LANCHONETE VINCULADA
       const { data: lanchoInsert, error: lanchoError } = await supabase

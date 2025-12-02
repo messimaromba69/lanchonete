@@ -21,7 +21,7 @@ export default function LoginAdm() {
     // 🔹 SOMENTE entra se email e senha forem corretos
     if (email === admin.email && password === admin.password) {
       toast({ title: "Bem-vindo, Administrador!" });
-      navigate("/selecionarAdm"); // 👉 VAI PARA A PÁGINA SELECIONE
+      navigate("/selecionaradm"); // 👉 VAI PARA A PÁGINA SELECIONE
     } else {
       toast({
         title: "Somente administradores podem acessar aqui!",

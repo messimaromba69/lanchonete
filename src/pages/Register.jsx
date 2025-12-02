@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import { supabase } from "../../supabase/supabase"; // ajuste caminho
 import { toast } from "../hooks/use-toast";
@@ -8,19 +8,32 @@ export default function Register() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
+  const [escolas, setEscolas] = useState([]);
+  const [selectedSchool, setSelectedSchool] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    carregarEscolas();
+  }, []);
+
+  const carregarEscolas = async () => {
+    try {
+      const { data, error } = await supabase.from("escola").select("id_escola, nome_escola").order("nome_escola");
+      if (!error && data) setEscolas(data);
+    } catch (e) {
+      console.error("Erro ao carregar escolas:", e);
+    }
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    if (!email || !password || !confirm) {
+    if (!email || !password) {
       toast({ title: "Preencha todos os campos!", variant: "destructive" });
       return;
     }
-
-    if (password !== confirm) {
-      toast({ title: "As senhas não coincidem!", variant: "destructive" });
+    if (!selectedSchool) {
+      toast({ title: "Selecione sua escola!", variant: "destructive" });
       return;
     }
 
@@ -34,6 +47,7 @@ export default function Register() {
         data: {
           role: "usuario", // dado salvo no próprio Auth
           criadoEm: new Date().toISOString(),
+          id_escola: selectedSchool || null,
         },
       },
     });
@@ -49,7 +63,7 @@ export default function Register() {
     toast({ title: "Conta criada com sucesso!" });
 
     // 2️⃣ Redirecionar para login
-    navigate("/loginuser");
+    navigate("/loginUser");
   };
 
   return (
@@ -82,7 +96,7 @@ export default function Register() {
             <input
               type="email"
               className="w-full bg-blue-700 text-white rounded-lg px-4 py-3 mt-2 text-lg"
-              value={email}
+              value={email || ""}
               onChange={(e) => setEmail(e.target.value)}
             />
           </div>
@@ -92,21 +106,23 @@ export default function Register() {
             <input
               type="password"
               className="w-full bg-blue-700 text-white rounded-lg px-4 py-3 mt-2 text-lg"
-              value={password}
+              value={password || ""}
               onChange={(e) => setPassword(e.target.value)}
             />
           </div>
 
           <div>
-            <label className="text-blue-800 text-lg font-semibold">
-              Confirmar Senha
-            </label>
-            <input
-              type="password"
-              className="w-full bg-blue-700 text-white rounded-lg px-4 py-3 mt-2 text-lg"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-            />
+            <label className="text-blue-800 text-lg font-semibold">Sua Escola</label>
+            <select
+              value={selectedSchool}
+              onChange={(e) => setSelectedSchool(e.target.value)}
+              className="w-full bg-white text-gray-900 rounded-lg px-4 py-3 mt-2 text-lg border"
+            >
+              <option value="">Selecione sua escola</option>
+              {escolas.map((esc) => (
+                <option key={esc.id_escola} value={esc.id_escola}>{esc.nome_escola}</option>
+              ))}
+            </select>
           </div>
 
           <button
