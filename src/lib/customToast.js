@@ -1,4 +1,4 @@
-import { toast as rawToast } from "@/hooks/use-toast";
+import { toast as rawToast } from "../hooks/use-toast";
 
 /**
  * Custom toast helpers wrapping the project's toast implementation.

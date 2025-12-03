@@ -112,7 +112,7 @@ export default function Profile() {
                 perfil.foto ||
                 "https://cdn-icons-png.flaticon.com/512/847/847969.png"
               }
-              alt="Avatar"
+              alt=""
               className="w-40 h-40 rounded-full object-cover"
             />
           </div>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabase/supabase";
-import { notify } from "@/lib/customToast";
+import { notify } from "../lib/customToast";
 import {
   ArrowLeft,
   Trash2,
@@ -409,18 +409,7 @@ export default function UserAdm() {
                 }
               />
 
-              <input
-                type="text"
-                className="border p-2 rounded"
-                placeholder="Telefone"
-                value={editando.perfil?.telefone || ""}
-                onChange={(e) =>
-                  setEditando({
-                    ...editando,
-                    perfil: { ...editando.perfil, telefone: e.target.value },
-                  })
-                }
-              />
+              {/* Telefone removido (duplicado). Campo com máscara abaixo mantém edição. */}
 
               <input
                 type="text"
@@ -487,10 +476,8 @@ export default function UserAdm() {
                 }
               />
 
-              <input
-                type="text"
+              <select
                 className="border p-2 rounded"
-                placeholder="Complemento"
                 value={editando.perfil?.complemento || ""}
                 onChange={(e) =>
                   setEditando({
@@ -498,7 +485,13 @@ export default function UserAdm() {
                     perfil: { ...editando.perfil, complemento: e.target.value },
                   })
                 }
-              />
+              >
+                <option value="">Complemento</option>
+                <option value="Casa">Casa</option>
+                <option value="Condomínio">Condomínio</option>
+                <option value="Apartamento">Apartamento</option>
+                <option value="Bloco">Bloco</option>
+              </select>
 
               <select
                 className="border p-2 rounded"
@@ -516,6 +509,18 @@ export default function UserAdm() {
                 <option value="O">Outro</option>
               </select>
 
+              <input
+                type="text"
+                className="border p-2 rounded"
+                placeholder="Telefone"
+                value={editando.perfil?.telefone || ""}
+                onChange={(e) =>
+                  setEditando({
+                    ...editando,
+                    perfil: { ...editando.perfil, telefone: maskPhone(e.target.value) },
+                  })
+                }
+              />
               <input
                 type="date"
                 className="border p-2 rounded"
@@ -619,7 +624,7 @@ export default function UserAdm() {
                     <tr className="border-b hover:bg-gray-50 transition">
                       <td className="p-3">{u.email}</td>
                       <td className="p-3">{u.perfil?.nome || "-"}</td>
-                      <td className="p-3">{u.perfil?.telefone || "-"}</td>
+                      <td className="p-3">{u.perfil?.telefone ? maskPhone(u.perfil.telefone) : "-"}</td>
                       <td className="p-3">
                         {
                           escolas.find(
@@ -630,12 +635,38 @@ export default function UserAdm() {
 
                       <td className="p-3 flex gap-4">
                         <button
-                          onClick={() =>
-                            setEditando({
-                              ...u,
-                              perfil: { ...(u.perfil || {}) },
-                            })
-                          }
+                          onClick={async () => {
+                            try {
+                              const { data: perfilData } = await supabase
+                                .from("perfil")
+                                .select("*")
+                                .eq("id_user", u.id)
+                                .maybeSingle();
+
+                              const perfil = perfilData || u.perfil || {};
+
+                              // aplicar máscaras de exibição
+                              perfil.telefone = perfil.telefone ? maskPhone(perfil.telefone) : "";
+                              perfil.cep = perfil.cep ? maskCEP(perfil.cep) : "";
+
+                              // garantir formato de data para o input date (YYYY-MM-DD)
+                              if (perfil.data_nascimento) {
+                                const d = String(perfil.data_nascimento);
+                                if (d.includes("/")) {
+                                  // se estiver em DD/MM/AAAA, converter
+                                  const [dd, mm, yy] = d.split("/");
+                                  perfil.data_nascimento = `${yy}-${mm}-${dd}`;
+                                } else {
+                                  perfil.data_nascimento = d.slice(0, 10);
+                                }
+                              }
+
+                              setEditando({ ...u, perfil });
+                            } catch (e) {
+                              console.error("Erro ao carregar perfil para edição:", e);
+                              setEditando({ ...u, perfil: { ...(u.perfil || {}) } });
+                            }
+                          }}
                           className="text-blue-600"
                         >
                           <Pencil size={22} />
@@ -720,14 +751,11 @@ export default function UserAdm() {
                               </div>
                               <div className="col-span-2">
                                 <b>Escola cadastrada:</b>{" "}
-                                {escolas.find(
-                                  (e) => e.id_escola === u.perfil?.id_escola
-                                )?.nome_escola || "-"}
+                                {escolas.find((e) => e.id_escola === u.perfil?.id_escola)
+                                  ?.nome_escola || "-"}
                                 {u.perfil?.id_escola && (
                                   <button
-                                    onClick={() =>
-                                      removerEscola(u.perfil.id_escola)
-                                    }
+                                    onClick={() => removerEscola(u.perfil.id_escola)}
                                     className="ml-3 text-red-600 text-sm"
                                   >
                                     <Trash2 size={16} /> Excluir Escola
