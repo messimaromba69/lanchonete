@@ -99,33 +99,63 @@ export default function AdmMaster() {
 
 			// 2) remover pedidos vinculados às lanchonetes (se houver)
 			if (lanchIds.length > 0) {
-				const { error: errPedidos } = await supabase
+				const { data: deletedPedidos, error: errPedidos } = await supabase
 					.from("pedido")
 					.delete()
-					.in("id_lanchonete", lanchIds);
-				if (errPedidos) throw errPedidos;
+					.in("id_lanchonete", lanchIds)
+					.select("id_pedido");
+				if (errPedidos) {
+					console.error("Erro removendo pedidos:", errPedidos);
+					throw errPedidos;
+				}
+				console.debug("Pedidos removidos:", deletedPedidos);
 			}
 
 			// 3) remover lanchonetes da escola
-			const { error: errLanchDelete } = await supabase
+			const { data: deletedLanch, error: errLanchDelete } = await supabase
 				.from("lanchonete")
 				.delete()
-				.eq("id_escola", id_escola);
-			if (errLanchDelete) throw errLanchDelete;
+				.eq("id_escola", id_escola)
+				.select("id_lanchonete");
+			if (errLanchDelete) {
+				console.error("Erro removendo lanchonetes:", errLanchDelete);
+				throw errLanchDelete;
+			}
+			console.debug("Lanchonetes removidas:", deletedLanch);
 
 			// 4) remover perfis vinculados à escola
-			const { error: errPerfil } = await supabase
+			const { data: deletedPerfis, error: errPerfil } = await supabase
 				.from("perfil")
 				.delete()
-				.eq("id_escola", id_escola);
-			if (errPerfil) throw errPerfil;
+				.eq("id_escola", id_escola)
+				.select("*");
+			if (errPerfil) {
+				console.error("Erro removendo perfis:", errPerfil);
+				throw errPerfil;
+			}
+			console.debug("Perfis removidos/atualizados:", deletedPerfis);
 
-			// 5) remover a escola
-			const { error } = await supabase.from("escola").delete().eq("id_escola", id_escola);
-			if (error) throw error;
+			// 5) remover a escola e confirmar remoção no banco
+			const { data: removedEscola, error: errEscola, status, statusText } = await supabase
+				.from("escola")
+				.delete()
+				.eq("id_escola", id_escola)
+				.select("id_escola");
+			if (errEscola) {
+				console.error("Erro removendo escola (errEscola):", errEscola, { status, statusText });
+				throw errEscola;
+			}
+			console.debug("Escola removida (resposta):", removedEscola, { status, statusText });
+			if (errEscola) throw errEscola;
 
-			setEscolas((s) => s.filter((x) => x.id_escola !== id_escola));
-			toast({ title: "Removido", description: "Escola e dependências removidas." });
+			// Se o banco retornou linhas removidas, atualizamos o estado local
+			if (removedEscola && removedEscola.length > 0) {
+				setEscolas((s) => s.filter((x) => x.id_escola !== id_escola));
+				toast({ title: "Removido", description: `Escola e dependências removidas (${removedEscola.length}).` });
+			} else {
+				console.warn("Remoção não retornou linhas (possível RLS/permissão):", removedEscola);
+				toast({ title: "Não removido", description: "A operação não removeu registros no banco. Verifique permissões (RLS) e console." });
+			}
 		} catch (e) {
 			console.error("Erro remover escola:", e);
 			toast({ title: "Erro", description: "Não foi possível remover a escola. Veja o console." });
