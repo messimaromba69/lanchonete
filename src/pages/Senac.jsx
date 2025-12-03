@@ -10,86 +10,70 @@ export default function CardapioSenac() {
   const { itensSelecionados = [], quantidades = {} } = location.state || {};
 
   return (
-    <div className="flex flex-col min-h-screen bg-white text-gray-800 p-9 relative">
+    <div className="min-h-screen bg-gradient-to-b from-white via-orange-50 to-slate-100 p-8 flex items-center justify-center">
+      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden">
+        <div className="relative px-8 py-8">
+          <div className="flex items-center justify-between relative">
+            <div className="flex items-center gap-6">
+              <img src={fundoSenac} alt="Senac" className="w-28 md:w-32" />
+            </div>
 
-      {/* ÍCONE DE PERFIL */}
-      <button
-        onClick={() => navigate("/profile")}
-        className="absolute top-6 right-20 p-2 rounded-lg z-40"
-        aria-label="Perfil"
-      >
-        <FaUserCircle size={40} className="text-orange-500" />
-      </button>
+            <div className="absolute left-1/2 transform -translate-x-1/2 text-center">
+              <h2 className="text-2xl md:text-3xl font-semibold text-orange-600">Cardápio</h2>
+              <div className="text-base md:text-lg text-slate-500">SENAC</div>
+            </div>
 
-      {/* ÍCONE DO CARRINHO */}
-      <button
-        onClick={() =>
-          navigate("/cart", {
-            state: { itensSelecionados, quantidades },
-          })
-        }
-        className="absolute top-6 right-6 p-2 rounded-lg z-50"
-        aria-label="Carrinho"
-      >
-        <FaShoppingCart size={36} className="text-orange-500" />
-      </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() =>
+                  navigate("/cart", { state: { itensSelecionados, quantidades } })
+                }
+                className="p-2 rounded-lg hover:bg-slate-100"
+                aria-label="Carrinho"
+              >
+                <FaShoppingCart size={36} className="text-orange-600" />
+              </button>
 
-      {/* LOGO */}
-      <div className="flex justify-center mt-4">
-        <img
-          src={fundoSenac}
-          alt="Senac"
-          className="w-40 h-32 object-contain"
-        />
-      </div>
+              <button onClick={() => navigate("/profile")} className="p-2 rounded-lg hover:bg-slate-100">
+                <FaUserCircle size={36} className="text-orange-600" />
+              </button>
+            </div>
+          </div>
 
-      {/* TÍTULO */}
-      <h1 className="text-3xl font-semibold text-orange-600 text-center mt-4">
-        Cardápio - <span className="text-4xl font-extrabold uppercase">SENAC</span>
-      </h1>
+          <div className="mt-6">
+            <p className="text-sm text-slate-500 mb-4">Escolha a categoria para ver os itens disponíveis no Senac.</p>
 
-      {/* BOTÕES */}
-      <div className="mt-10 flex flex-col space-y-5 w-[420px] mx-auto">
+            <div className="grid grid-cols-1 gap-4">
+              <button
+                onClick={() => navigate("/salgado", { state: { itensSelecionados, quantidades } })}
+                className="w-full rounded-2xl py-4 text-xl font-semibold text-white bg-gradient-to-r from-orange-600 to-amber-500 shadow-md hover:scale-[1.02] transform transition"
+              >
+                Salgados
+              </button>
 
-        <button
-          onClick={() =>
-            navigate("/salgado", {
-              state: { itensSelecionados, quantidades },
-            })
-          }
-          className="bg-orange-600 text-white py-6 rounded-2xl text-2xl font-semibold hover:bg-orange-700 transition"
-        >
-          Salgados
-        </button>
+              <button
+                onClick={() => navigate("/doce", { state: { itensSelecionados, quantidades } })}
+                className="w-full rounded-2xl py-4 text-xl font-semibold text-white bg-gradient-to-r from-orange-600 to-amber-500 shadow-md hover:scale-[1.02] transform transition"
+              >
+                Doces
+              </button>
 
-        <button
-          onClick={() =>
-            navigate("/doce", {
-              state: { itensSelecionados, quantidades },
-            })
-          }
-          className="bg-orange-600 text-white py-6 rounded-2xl text-2xl font-semibold hover:bg-orange-700 transition"
-        >
-          Doces
-        </button>
+              <button
+                onClick={() => navigate("/bebida", { state: { itensSelecionados, quantidades } })}
+                className="w-full rounded-2xl py-4 text-xl font-semibold text-white bg-gradient-to-r from-orange-600 to-amber-500 shadow-md hover:scale-[1.02] transform transition"
+              >
+                Bebidas
+              </button>
 
-        <button
-          onClick={() =>
-            navigate("/bebida", {
-              state: { itensSelecionados, quantidades },
-            })
-          }
-          className="bg-orange-600 text-white py-6 rounded-2xl text-2xl font-semibold hover:bg-orange-700 transition"
-        >
-          Bebidas
-        </button>
-
-        <button
-          onClick={() => navigate("/select")}
-          className="bg-yellow-500 text-white py-4 rounded-2xl text-lg font-semibold hover:bg-yellow-400 transition"
-        >
-          Sair do Cardápio
-        </button>
+              <button
+                onClick={() => navigate("/select")}
+                className="w-full rounded-2xl py-3 text-lg font-semibold text-white bg-yellow-500 shadow-sm hover:bg-yellow-400 transition"
+              >
+                Sair do Cardápio
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
