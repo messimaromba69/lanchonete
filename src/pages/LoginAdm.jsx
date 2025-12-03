@@ -4,29 +4,107 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "../hooks/use-toast";
 import SescLogo from "../assets/sesc.png";
 import SenacLogo from "../assets/senac.png";
+import { supabase } from "../../supabase/supabase";
 
 export default function LoginAdm() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast({ title: "Preencha email e senha!", variant: "destructive" });
+      return;
+    }
+    // credenciais locais de fallback (apenas para desenvolvimento)
+    const localAdmin = { email: "admin@gmail.com", password: "123456" };
 
-    const admin = {
-      email: "admin@gmail.com",
-      password: "123456",
-    };
+    // Se for exatamente o admin local, não chamamos o Supabase (evita 400)
+    if (email === localAdmin.email && password === localAdmin.password) {
+      try {
+        localStorage.setItem("isLocalAdmin", "1");
+      } catch (e) {
+        console.warn("Não foi possível salvar flag de admin local:", e);
+      }
+      toast({ title: "Bem-vindo, Administrador (modo local)!" });
+      navigate("/selecionarAdm");
+      return;
+    }
 
-    // 🔹 SOMENTE entra se email e senha forem corretos
-    if (email === admin.email && password === admin.password) {
-      toast({ title: "Bem-vindo, Administrador!" });
-      navigate("/selecionaradm"); // 👉 VAI PARA A PÁGINA SELECIONE
-    } else {
-      toast({
-        title: "Somente administradores podem acessar aqui!",
-        variant: "destructive",
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
+
+      if (error) {
+        // Se as credenciais do Supabase são inválidas, aceita fallback local
+        console.warn("Supabase auth error:", error);
+        if (email === localAdmin.email && password === localAdmin.password) {
+          try {
+            localStorage.setItem("isLocalAdmin", "1");
+          } catch (e) {
+            console.warn("Não foi possível salvar flag de admin local:", e);
+          }
+          toast({ title: "Bem-vindo, Administrador (modo local)!" });
+          navigate("/selecionarAdm");
+          return;
+        }
+
+        toast({ title: error.message || "Erro no login", variant: "destructive" });
+        return;
+      }
+
+      const user = data?.user;
+      if (!user) {
+        console.error("Supabase returned no user, data:", data);
+        toast({ title: "Erro inesperado ao buscar usuário!", variant: "destructive" });
+        return;
+      }
+
+      // Verifica role na tabela user_roles
+      const { data: roleData, error: roleErr } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (roleErr) {
+        console.error("Erro ao checar role:", roleErr);
+        toast({ title: "Erro ao verificar permissão", variant: "destructive" });
+        return;
+      }
+
+      const role = roleData?.role || user.user_metadata?.role;
+      if (role !== "admin") {
+        // desloga caso não seja admin
+        await supabase.auth.signOut();
+        toast({ title: "Somente administradores podem acessar aqui!", variant: "destructive" });
+        return;
+      }
+
+      toast({ title: "Bem-vindo, Administrador!" });
+      navigate("/selecionarAdm");
+    } catch (err) {
+      console.error("Erro no login admin:", err);
+      // último recurso: permitir login local se as credenciais baterem
+      if (email === localAdmin.email && password === localAdmin.password) {
+        try {
+          localStorage.setItem("isLocalAdmin", "1");
+        } catch (e) {
+          console.warn("Não foi possível salvar flag de admin local:", e);
+        }
+        toast({ title: "Bem-vindo, Administrador (modo local)!" });
+        navigate("/selecionarAdm");
+        return;
+      }
+      toast({ title: "Erro no login. Tente novamente.", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 

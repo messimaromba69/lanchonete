@@ -19,6 +19,29 @@ export default function PagamentoSesc() {
   const [total, setTotal] = useState(0);
   const [idLanchonete, setIdLanchonete] = useState(null);
 
+  const handleBack = () => {
+    try {
+      // Se houver histórico anterior no SPA (react-router armazena idx), voltamos uma página
+      const idx = window.history.state && window.history.state.idx;
+      if (typeof idx === "number" && idx > 0) {
+        navigate(-1);
+        return;
+      }
+
+      // Caso não haja histórico (acesso direto), fazemos fallback para rota de carrinho
+      const raw = localStorage.getItem("carrinhoSesc");
+      if (raw) {
+        const carrinho = JSON.parse(raw);
+        navigate("/carrinho", { state: { carrinho } });
+        return;
+      }
+    } catch (e) {
+      console.error("Erro ao recuperar carrinhoSesc:", e);
+    }
+    // último recurso: apenas navegar -1
+    navigate(-1);
+  };
+
   useEffect(() => {
     if (!id_pedido) {
       toast({ title: "Nenhum pedido encontrado", description: "Volte ao carrinho e tente novamente.", variant: "destructive" });
@@ -186,7 +209,7 @@ export default function PagamentoSesc() {
       <div className="w-full max-w-lg">
         <div className="relative flex items-center justify-center mt-2">
           <button
-            onClick={() => navigate(-1)}
+            onClick={handleBack}
             className="fixed left-0 top-4 text-black p-8 rounded-r-md"
             aria-label="Voltar"
           >

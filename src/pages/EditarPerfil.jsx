@@ -130,7 +130,7 @@ export default function EditarPerfil() {
         Editar Perfil
       </h1>
 
-      <div className="max-w-md mx-auto">
+      <div className="max-w-md mx-auto bg-white border border-slate-100 rounded-xl shadow-md p-6">
         {[
           { key: "nome", placeholder: "Nome" },
           { key: "cep", placeholder: "CEP", mask: maskCEP },
@@ -138,7 +138,7 @@ export default function EditarPerfil() {
           { key: "estado", placeholder: "Estado" },
           { key: "rua", placeholder: "Rua" },
           { key: "bairro", placeholder: "Bairro" },
-          { key: "complemento", placeholder: "Complemento" },
+          { key: "complemento", placeholder: "Complemento", options: ["Apartamento", "Bloco", "Casa", "Condomínio"] },
           { key: "sexo", placeholder: "Sexo" },
           { key: "telefone", placeholder: "Telefone", mask: maskPhone },
           {
@@ -147,22 +147,30 @@ export default function EditarPerfil() {
             mask: maskDate,
           },
         ].map((item) => (
-          item.key === "sexo" ? (
+          (item.key === "sexo" || item.key === "complemento") ? (
             <select
               key={item.key}
-              className="w-full bg-gray-200 p-3 rounded mb-3"
-              value={form.sexo ?? ""}
-              onChange={(e) => setForm({ ...form, sexo: e.target.value })}
+              className="w-full bg-gray-100 p-3 rounded-md mb-3 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-300"
+              value={form[item.key] ?? ""}
+              onChange={(e) => setForm({ ...form, [item.key]: e.target.value })}
             >
-              <option value="">Selecione</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Feminino">Feminino</option>
-              <option value="Prefiro não informar">Prefiro não informar</option>
+              <option value="">{item.key === "sexo" ? "Sexo" : "Complemento"}</option>
+              {item.key === "sexo" ? (
+                <>
+                  <option value="Masculino">Masculino</option>
+                  <option value="Feminino">Feminino</option>
+                  <option value="Prefiro não informar">Prefiro não informar</option>
+                </>
+              ) : (
+                item.options?.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))
+              )}
             </select>
           ) : (
             <input
               key={item.key}
-              className="w-full bg-gray-200 p-3 rounded mb-3"
+              className="w-full bg-gray-100 p-3 rounded-md mb-3 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-300"
               placeholder={item.placeholder}
               value={form[item.key] ?? ""}
               onChange={(e) =>
@@ -179,10 +187,11 @@ export default function EditarPerfil() {
 
         <button
           onClick={salvarEdicao}
-          className="w-full bg-yellow-400 py-3 rounded font-bold mt-4 mb-10"
+          className="w-full bg-gradient-to-r from-amber-400 to-yellow-400 text-black py-3 rounded-md font-bold mt-4 mb-4 hover:brightness-95 transition"
         >
           Salvar
         </button>
+        <div className="text-center text-sm text-slate-400">Os campos são obrigatórios.</div>
       </div>
     </div>
   );

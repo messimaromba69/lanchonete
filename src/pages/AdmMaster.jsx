@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, PlusCircle, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "../hooks/use-toast";
+import { useAuth } from "../hooks/useAuth";
 
 export default function AdmMaster() {
+	const navigate = useNavigate();
 	const [escolas, setEscolas] = useState([]);
 	const [nome, setNome] = useState("");
 	const [loading, setLoading] = useState(false);
+	const { user, loading: authLoading } = useAuth();
+	// detecta um admin local marcado pelo login administrativo (LoginAdm)
+	const isLocalAdmin = typeof window !== "undefined" && localStorage.getItem("isLocalAdmin") === "1";
 
 	useEffect(() => {
 		carregarEscolas();
@@ -34,20 +40,44 @@ export default function AdmMaster() {
 			toast({ title: "Nome vazio", description: "Informe o nome da escola." });
 			return;
 		}
+		// Se a autenticação ainda está sendo verificada, avise e saia
+		if (authLoading) {
+			toast({ title: "Aguarde", description: "Verificando autenticação..." });
+			return;
+		}
+
+		// Verifica usuário vindo do contexto de autenticação ou admin local
+		if (!user && !isLocalAdmin) {
+			toast({ title: "Não autenticado", description: "Faça login antes de criar uma escola." });
+			return;
+		}
+
+		setLoading(true);
 		try {
-			setLoading(true);
+			// Tenta inserir
 			const { data, error } = await supabase
 				.from("escola")
-				.insert({ nome_escola: nome.trim() })
-				.select("id_escola, nome_escola, created_at")
-				.single();
-			if (error) throw error;
-			setEscolas((s) => [data, ...s]);
+				.insert([{ nome_escola: nome.trim() }])
+				.select("id_escola, nome_escola, created_at");
+
+			if (error) {
+				console.error("Erro criar escola:", error);
+				if (error.code === "42501") {
+					throw new Error(
+						"Inserção bloqueada por Row-Level Security (RLS). Configure uma policy adequada ou use um backend."
+					);
+				}
+				throw error;
+			}
+
+			// `data` é um array das linhas inseridas — descompacta ao adicionar localmente
+			console.log("Escola criada:", data);
+			setEscolas((s) => [...(data || []), ...s]);
 			setNome("");
 			toast({ title: "Criado", description: "Escola criada com sucesso." });
-		} catch (e) {
-			console.error("Erro criar escola:", e);
-			toast({ title: "Erro", description: "Não foi possível criar a escola." });
+		} catch (err) {
+			console.error("Erro ao criar escola:", err);
+			toast({ title: "Erro", description: err.message || "Erro desconhecido ao criar escola." });
 		} finally {
 			setLoading(false);
 		}
@@ -105,55 +135,75 @@ export default function AdmMaster() {
 	};
 
 	return (
-		<div className="min-h-screen p-8 bg-slate-50">
-			<div className="max-w-4xl mx-auto bg-white rounded-2xl p-6 shadow">
-				<div className="flex items-center justify-between mb-4">
-					<div>
-						<h1 className="text-2xl font-bold">Admin Master</h1>
-						<p className="text-sm text-slate-500">Gerencie escolas da aplicação</p>
+		<div className="min-h-screen bg-slate-50 py-12">
+			<div className="max-w-5xl mx-auto px-6">
+				<header className="bg-white shadow rounded-2xl p-6 mb-6 flex items-center justify-between">
+					<div className="flex items-center gap-4">
+						<button onClick={() => navigate("/selecionarAdm")} className="text-slate-600 hover:text-slate-900">
+							<ArrowLeft size={28} />
+						</button>
+						<div>
+							<h1 className="text-2xl font-bold">Admin Master</h1>
+							<p className="text-sm text-slate-500">Gerencie escolas da aplicação</p>
+						</div>
 					</div>
-					<div className="space-x-3">
-						<Link to="/selecionarAdm" className="px-3 py-2 bg-sky-100 text-sky-700 rounded">Selecionar Painel</Link>
+					<div className="flex items-center gap-4">
+						{authLoading ? (
+							<span className="text-sm text-amber-600">Verificando autenticação...</span>
+						) : !user ? (
+							<Link to="/loginAdm" className="px-3 py-2 bg-sky-100 text-sky-700 rounded">Entrar</Link>
+						) : (
+							<span className="px-3 py-1 bg-green-100 text-green-800 rounded text-sm">Autenticado</span>
+						)}
 						<Link to="/userAdm" className="px-3 py-2 bg-gray-100 rounded">Painel Usuários</Link>
 					</div>
-				</div>
+				</header>
 
-				<div className="border-t pt-4">
-					<h2 className="font-semibold mb-2">Criar nova escola</h2>
-					<div className="flex gap-2">
-						<input
-							value={nome}
-							onChange={(e) => setNome(e.target.value)}
-							placeholder="Nome da escola"
-							className="flex-1 border rounded px-3 py-2"
-						/>
-						<button onClick={criarEscola} disabled={loading} className="px-4 py-2 bg-indigo-600 text-white rounded">
-							Criar
-						</button>
-					</div>
-				</div>
+				<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+					<section className="col-span-1 lg:col-span-1 bg-white p-6 rounded-2xl shadow">
+						<h2 className="font-semibold text-lg mb-4 flex items-center gap-2">Criar nova escola <PlusCircle className="text-indigo-600" /></h2>
+						<div className="space-y-3">
+							<input
+								value={nome}
+								onChange={(e) => setNome(e.target.value)}
+								placeholder="Nome da escola"
+								className="w-full border rounded-lg px-4 py-3 focus:ring-2 focus:ring-indigo-200"
+							/>
+							<button onClick={criarEscola} disabled={loading || authLoading} className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-400 text-white rounded-lg shadow hover:from-indigo-700 disabled:opacity-50">
+								Criar Escola
+							</button>
+							<div className="text-xs text-slate-400">
+								{authLoading ? 'Verificando autenticação...' : (!user ? 'Faça login para criar uma escola.' : 'Você está autenticado e pode criar escolas.')}
+							</div>
+						</div>
+					</section>
 
-				<div className="mt-6">
-					<h3 className="font-semibold mb-3">Escolas cadastradas</h3>
-					{loading && escolas.length === 0 ? (
-						<p>Carregando...</p>
-					) : escolas.length === 0 ? (
-						<p className="text-sm text-slate-500">Nenhuma escola cadastrada.</p>
-					) : (
-						<ul className="space-y-2">
-							{escolas.map((esc) => (
-								<li key={esc.id_escola} className="flex items-center justify-between p-3 rounded border">
-									<div>
-										<div className="font-medium">{esc.nome_escola}</div>
-										<div className="text-xs text-slate-400">{esc.created_at ? new Date(esc.created_at).toLocaleString() : ''}</div>
-									</div>
-									<div className="flex items-center gap-3">
-										<button onClick={() => removerEscola(esc.id_escola)} className="text-sm text-red-600">Excluir</button>
-									</div>
-								</li>
-							))}
-						</ul>
-					)}
+					<section className="col-span-1 lg:col-span-2">
+						<div className="bg-white p-6 rounded-2xl shadow">
+							<h3 className="font-semibold mb-4">Escolas cadastradas</h3>
+							{loading && escolas.length === 0 ? (
+								<p>Carregando...</p>
+							) : escolas.length === 0 ? (
+								<div className="text-center py-16 text-slate-400">Nenhuma escola cadastrada.</div>
+							) : (
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									{escolas.map((esc) => (
+										<div key={esc.id_escola} className="p-4 border rounded-lg flex flex-col justify-between">
+											<div>
+												<div className="font-medium text-lg">{esc.nome_escola}</div>
+												<div className="text-xs text-slate-400">{esc.created_at ? new Date(esc.created_at).toLocaleString() : ''}</div>
+											</div>
+											<div className="mt-4 flex items-center justify-end gap-3">
+												<button onClick={() => removerEscola(esc.id_escola)} className="inline-flex items-center gap-2 text-red-600 hover:underline">
+													<Trash2 size={16} /> Excluir
+												</button>
+											</div>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					</section>
 				</div>
 			</div>
 		</div>

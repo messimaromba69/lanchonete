@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { FaUserCircle } from "react-icons/fa";   // <- FALTAVA ISSO
 import fundoSenac from "./assets/senac.png";
@@ -14,18 +14,39 @@ export default function CarrinhoSenac() {
   const [qtd, setQtd] = useState({});
   const [total, setTotal] = useState(0);
 
-  // Carrega carrinho
+  const location = useLocation();
+
+  // Carrega carrinho (prioriza location.state.carrinho, depois localStorage)
   useEffect(() => {
-    const carrinho = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-    setItens(carrinho);
+    try {
+      const fromState = location.state?.carrinho;
+      if (fromState && Array.isArray(fromState)) {
+        setItens(fromState);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(fromState));
 
-    const objQtd = {};
-    carrinho.forEach((item) => {
-      objQtd[item.id_produto] = item.quantidade;
-    });
+        const objQtd = {};
+        fromState.forEach((item) => {
+          objQtd[item.id_produto] = item.quantidade;
+        });
+        setQtd(objQtd);
+        return;
+      }
 
-    setQtd(objQtd);
-  }, []);
+      const carrinho = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      setItens(carrinho);
+
+      const objQtd = {};
+      carrinho.forEach((item) => {
+        objQtd[item.id_produto] = item.quantidade;
+      });
+
+      setQtd(objQtd);
+    } catch (e) {
+      console.error("Erro ao carregar carrinho:", e);
+      setItens([]);
+      setQtd({});
+    }
+  }, [location.state]);
 
   // Recalcula total
   useEffect(() => {
@@ -197,8 +218,8 @@ export default function CarrinhoSenac() {
         return;
       }
 
-      localStorage.removeItem(STORAGE_KEY);
-
+      // Não removemos o carrinho aqui — manter no localStorage para permitir
+      // que o usuário volte da tela de pagamento e veja os mesmos itens.
       navigate("/payment", { state: { id_pedido: createdId } });
     } catch (e) {
       console.log(e);
@@ -216,7 +237,7 @@ export default function CarrinhoSenac() {
           <img
             src={fundoSenac}
             alt="Logo Senac"
-            className="h-28 md:h-32 object-contain"
+            className="w-40 h-32 object-contain"
           />
 
           <button
